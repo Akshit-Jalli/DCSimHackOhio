@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# cached town map data (big, re-downloadable)
+/data/towns/
+
+# local secrets (also covered by .env* above)
+.env.local
