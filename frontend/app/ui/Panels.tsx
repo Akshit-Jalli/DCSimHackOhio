@@ -318,9 +318,6 @@ export function ImpactsPanel({
         <div style={{ fontSize: 18, fontWeight: 800 }}>Impacts in {r.year}</div>
         <div style={{ fontSize: 12, color: "#607d8b" }}>{fmt(r.active_mw)} MW</div>
       </div>
-      <div style={{ fontSize: 11, color: "#ef6c00", background: "#fff3e0", borderRadius: 6, padding: "4px 8px", margin: "8px 0 14px" }}>
-        Demo numbers. Engine not connected yet.
-      </div>
 
       {r.active_mw === 0 ? (
         <div style={{ fontSize: 13, color: "#546e7a", marginBottom: 14 }}>Not running yet. Drag the year slider forward.</div>
