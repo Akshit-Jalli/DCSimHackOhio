@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { setTown } from "./mapConfig";
 import Scene from "./Scene";
+import Onboarding from "./ui/Onboarding";
 
 const TOWN = "wilmington-oh";
 // Downtown Wilmington, matching the files committed in public/
@@ -25,5 +26,10 @@ export default function TownApp() {
       .finally(() => setReady(true));
   }, []);
 
-  return ready ? <Scene /> : null;
+  return ready ? (
+    <>
+      <Scene />
+      <Onboarding />
+    </>
+  ) : null;
 }

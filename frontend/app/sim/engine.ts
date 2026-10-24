@@ -111,7 +111,6 @@ export type Extra = {
 export type YearRow = YearResult & { extra: Extra };
 export type RunMeta = { moratorium_year: number | null; mw_capped_at: number | null };
 
-const FT_PER_M = 3.28084;
 const L_PER_MGAL = 3.785e6;
 
 function pyCooling(c: SimInput["facility"]["cooling"]): "air_cooled" | "hybrid" | "evaporative" {

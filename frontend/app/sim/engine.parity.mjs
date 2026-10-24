@@ -9,7 +9,7 @@
 // Run:  node app/sim/engine.parity.mjs      (from frontend/)
 
 import { execSync } from "node:child_process";
-import { readFileSync, rmSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, rmSync, mkdirSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 
