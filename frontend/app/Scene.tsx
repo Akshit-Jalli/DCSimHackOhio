@@ -23,7 +23,7 @@ import {
   type Settings,
 } from "./sim/presets";
 import type { SimInput } from "./sim/types";
-import { runSimulation } from "./sim/fakeEngine";
+import { runSimulation } from "./sim/engine";
 import { BuildMenu, ImpactsPanel, SettingsPanel, YearBar, panel } from "./ui/Panels";
 
 const MAX_BUILDINGS_PER_TILE = 8; // more than this = part of town, can't build
