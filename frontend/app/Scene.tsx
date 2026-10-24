@@ -24,7 +24,11 @@ import {
 } from "./sim/presets";
 import type { SimInput } from "./sim/types";
 import { runSimulation } from "./sim/engine";
-import { BuildMenu, ImpactsPanel, SettingsPanel, YearBar, panel } from "./ui/Panels";
+import { interpResult, monthLabel, nightFromMonth } from "./sim/interp";
+import { BuildMenu, ImpactsPanel, MONTHS_TOTAL, SettingsPanel, YearBar, panel } from "./ui/Panels";
+
+const MS_PER_MONTH = 75; // autoplay: 192 months in about 14 seconds
+type NightMode = "auto" | "day" | "night";
 
 const MAX_BUILDINGS_PER_TILE = 8; // more than this = part of town, can't build
 
@@ -287,19 +291,27 @@ export default function Scene() {
   const [centroids, setCentroids] = useState<Float32Array | null>(null);
   const [landBlocked, setLandBlocked] = useState<Uint8Array | null>(null);
 
-  // Time
-  const [year, setYear] = useState(2031);
+  // Time, in months since the start of the horizon. The engine is annual;
+  // the display interpolates between years (see sim/interp.ts).
+  const [month, setMonth] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const t = month / 12; // fractional index into the annual results
+  const year = YEAR_START + Math.floor(month / 12);
 
   const [flyId, setFlyId] = useState(0);
   const [trees, setTrees] = useState<Float32Array | null>(null);
-  const [isNight, setIsNight] = useState(false);
+  const [nightMode, setNightMode] = useState<NightMode>("auto");
+  const [justPlaced, setJustPlaced] = useState(false);
   const [labels, setLabels] = useState<Label[]>([]);
   const hemiRef = useRef<THREE.HemisphereLight>(null);
   const sunRef = useRef<THREE.DirectionalLight>(null);
+
+  // Day/night: in Auto the calendar drives it — one full cycle per simulated
+  // year, darkest around July — so playing the timeline cycles the light.
   useEffect(() => {
-    night.target = isNight ? 1 : 0;
-  }, [isNight]);
+    night.target = nightMode === "auto" ? nightFromMonth(month) : nightMode === "night" ? 1 : 0;
+  }, [nightMode, month]);
+  const isNight = nightMode === "night" || (nightMode === "auto" && nightFromMonth(month) > 0.5);
   const compassRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const labelRef = useRef<HTMLSpanElement>(null);
@@ -314,10 +326,18 @@ export default function Scene() {
   const tiles = preset?.tiles ?? 4;
   const lotSize = tiles * TILE;
 
-  // Play button: step through the years
+  // Play button: step through the months, pause at the end
   useEffect(() => {
     if (!playing) return;
-    const id = setInterval(() => setYear((y) => (y >= YEAR_END ? YEAR_START : y + 1)), 700);
+    const id = setInterval(() => {
+      setMonth((m) => {
+        if (m >= MONTHS_TOTAL - 1) {
+          setPlaying(false);
+          return m;
+        }
+        return m + 1;
+      });
+    }, MS_PER_MONTH);
     return () => clearInterval(id);
   }, [playing]);
 
@@ -372,12 +392,13 @@ export default function Scene() {
       },
       policy: {
         property_abatement_pct: settings.abatementPct,
-        abatement_years: 15,
+        abatement_years: settings.abatementYears,
         pilot_annual_usd: 1.2e6,
         pilot_school_share_pct: 40,
         sales_tax_exemption: true,
         noise_setback_ft: 500,
-        grid_cost_allocation: "aep_dc_tariff",
+        // The engine reads this as "tariff holds" when it contains the word tariff.
+        grid_cost_allocation: settings.tariffHolds ? "large_load_tariff" : "socialized",
       },
       horizon: { start_year: YEAR_START, end_year: YEAR_END },
     };
@@ -387,8 +408,12 @@ export default function Scene() {
     () => (input ? runSimulation(input, { nearestResidenceM }) : null),
     [input, nearestResidenceM]
   );
+  // Annual row for things that must match the engine literally (noise zone, labels);
+  // interpolated row for anything shown as a moving number.
   const r = results?.find((x) => x.year === year) ?? null;
+  const rI = results ? interpResult(results, t) : null;
   const running = input ? activeMW(input.facility.phases, year) : 0;
+  const runningNow = rI ? rI.active_mw : 0;
   // A phase is "under construction" for the 2 years before it opens
   const planned = useMemo(() => {
     if (!input) return 0;
@@ -425,18 +450,51 @@ export default function Scene() {
     document.body.style.cursor = "grabbing";
   }
 
-  // When you let go: keep it if the spot is allowed, otherwise snap back (or cancel)
+  // When you let go: keep it if the spot is allowed, otherwise snap back (or cancel).
+  // A first successful placement rewinds to the start and presses play, so time
+  // visibly runs from the moment the data center lands.
   function endDrag() {
     if (!dragging) return;
     setDragging(false);
     document.body.style.cursor = "";
-    if (pos && valid) setLastValid(pos);
-    else if (lastValid) setPos(lastValid);
+    if (pos && valid) {
+      const first = !lastValid;
+      setLastValid(pos);
+      if (first) {
+        setMonth(0);
+        setPlaying(true);
+      }
+      setJustPlaced(true);
+    } else if (lastValid) setPos(lastValid);
     else {
       setPos(null);
       setSettings(null);
     }
   }
+
+  // The container's onPointerUp misses releases over a panel or outside the
+  // window, which left `dragging` stuck on. Listen on the window while dragging.
+  const endDragRef = useRef(endDrag);
+  useEffect(() => {
+    endDragRef.current = endDrag;
+  });
+  useEffect(() => {
+    if (!dragging) return;
+    const up = () => endDragRef.current();
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    return () => {
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+    };
+  }, [dragging]);
+
+  // "Placed" hint fades after a few seconds
+  useEffect(() => {
+    if (!justPlaced) return;
+    const id = setTimeout(() => setJustPlaced(false), 4000);
+    return () => clearTimeout(id);
+  }, [justPlaced]);
 
   function remove() {
     setSettings(null);
@@ -449,6 +507,17 @@ export default function Scene() {
     () => (placed && pos ? { pos, half: lotSize / 2, noiseRadius } : null),
     [placed, pos, lotSize, noiseRadius]
   );
+
+  // One line of status for the time bar and the impacts header
+  const status = useMemo(() => {
+    if (!input) return "";
+    if (runningNow >= 0.5) {
+      const next = input.facility.phases.find((ph) => ph.year > year);
+      return next ? `${Math.round(runningNow)} MW running · ${next.mw} MW by ${next.year}` : `${Math.round(runningNow)} MW running`;
+    }
+    return planned > 0 ? `Under construction · ${planned} MW planned` : "Not started";
+  }, [input, runningNow, planned, year]);
+  const timeLabel = monthLabel(YEAR_START, month);
 
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }} onPointerUp={endDrag}>
@@ -581,10 +650,12 @@ export default function Scene() {
           <span style={{ fontSize: 15 }}>⟲</span> Reset view
         </button>
         <button
-          onClick={() => setIsNight((v) => !v)}
+          onClick={() => setNightMode((m) => (m === "auto" ? "day" : m === "day" ? "night" : "auto"))}
+          title={nightMode === "auto" ? "Light follows the calendar as time plays. Click to lock to day." : nightMode === "day" ? "Locked to day. Click to lock to night." : "Locked to night. Click to follow the calendar."}
           style={{ ...panel, position: "relative", padding: "0 14px", border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, background: isNight ? "rgba(30,40,70,0.85)" : panel.background, color: isNight ? "#e3ecff" : panel.color }}
         >
-          <span style={{ fontSize: 15 }}>{isNight ? "☀" : "☾"}</span> {isNight ? "Day" : "Night"}
+          <span style={{ fontSize: 15 }}>{nightMode === "auto" ? "◐" : nightMode === "day" ? "☀" : "☾"}</span>
+          {nightMode === "auto" ? "Auto" : nightMode === "day" ? "Day" : "Night"}
         </button>
       </div>
 
@@ -594,14 +665,26 @@ export default function Scene() {
           Can&apos;t build here: too close to town or water
         </div>
       )}
+      {dragging && valid && (
+        <div style={{ ...panel, top: 16, left: "50%", transform: "translateX(-50%)", padding: "10px 16px", color: "#2e7d32", fontWeight: 600, pointerEvents: "none" }}>
+          Release to place it here
+        </div>
+      )}
       {!settings && !loading && (
         <div style={{ ...panel, top: 16, left: "50%", transform: "translateX(-50%)", padding: "10px 16px", fontWeight: 600, pointerEvents: "none" }}>
-          Drag a data center from the bar below onto the map
+          <span style={{ color: "#607d8b", marginRight: 8 }}>1 · Pick a size</span>Drag a data center from the bar below onto the map
+        </div>
+      )}
+      {placed && justPlaced && !dragging && (
+        <div style={{ ...panel, top: 16, left: "50%", transform: "translateX(-50%)", padding: "10px 16px", fontWeight: 600, pointerEvents: "none", color: "#2e7d32" }}>
+          Placed. Time is running — set the deal terms on the right, or drag it to move it.
         </div>
       )}
 
       {/* Left: impacts */}
-      {placed && r && results && <ImpactsPanel results={results} year={year} homesInZone={homesInZone} />}
+      {placed && rI && results && (
+        <ImpactsPanel results={results} t={t} timeLabel={timeLabel} status={status} homesInZone={homesInZone} />
+      )}
 
       {/* Right: settings */}
       {placed && settings && preset && (
@@ -610,7 +693,7 @@ export default function Scene() {
 
       {/* Bottom: year slider and build menu */}
       <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 10 }}>
-        {placed && <YearBar year={year} setYear={setYear} playing={playing} setPlaying={setPlaying} activeMW={running} />}
+        {placed && <YearBar month={month} setMonth={setMonth} playing={playing} setPlaying={setPlaying} status={status} />}
         <BuildMenu activeId={settings?.presetId ?? null} onStartDrag={startFromMenu} />
       </div>
 

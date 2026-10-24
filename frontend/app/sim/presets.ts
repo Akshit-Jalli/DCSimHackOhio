@@ -55,6 +55,8 @@ export type Settings = {
   cooling: Cooling;
   waterSource: WaterSource;
   abatementPct: number;
+  abatementYears: number; // how long the property-tax break lasts
+  tariffHolds: boolean; // true: the data center pays its own grid upgrades (a large-load tariff)
 };
 
 export function defaultSettings(p: Preset): Settings {
@@ -64,6 +66,8 @@ export function defaultSettings(p: Preset): Settings {
     cooling: p.cooling,
     waterSource: "municipal",
     abatementPct: 100,
+    abatementYears: 15,
+    tariffHolds: true,
   };
 }
 

@@ -3,6 +3,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
 import { PRESETS, YEAR_END, YEAR_START, type Preset, type Settings } from "../sim/presets";
 import type { Cooling, WaterSource, YearResult } from "../sim/types";
+import { interpResult, interpSeries, monthLabel } from "../sim/interp";
+
+export const MONTHS_TOTAL = (YEAR_END - YEAR_START + 1) * 12;
+
+const stepTag: CSSProperties = { fontSize: 11, color: "#607d8b", fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" };
 
 export const panel: CSSProperties = {
   position: "absolute",
@@ -75,44 +80,54 @@ export function BuildMenu({
 // ---------------- Year slider ----------------
 
 export function YearBar({
-  year,
-  setYear,
+  month,
+  setMonth,
   playing,
   setPlaying,
-  activeMW,
+  status,
 }: {
-  year: number;
-  setYear: (y: number) => void;
+  month: number; // 0 .. MONTHS_TOTAL-1
+  setMonth: (m: number) => void;
   playing: boolean;
   setPlaying: (p: boolean) => void;
-  activeMW: number;
+  status: string;
 }) {
+  const atEnd = month >= MONTHS_TOTAL - 1;
   return (
-    <div style={{ ...panel, position: "relative", padding: "10px 16px", display: "flex", alignItems: "center", gap: 14, width: 470 }}>
+    <div style={{ ...panel, position: "relative", padding: "10px 16px", display: "flex", alignItems: "center", gap: 14, width: 520 }}>
       <button
-        onClick={() => setPlaying(!playing)}
-        style={{ width: 34, height: 34, borderRadius: 17, border: "none", background: "#1e88e5", color: "white", fontWeight: 700, cursor: "pointer" }}
-        aria-label={playing ? "Pause" : "Play"}
+        onClick={() => {
+          if (!playing && atEnd) setMonth(0);
+          setPlaying(!playing);
+        }}
+        style={{ width: 36, height: 36, borderRadius: 18, border: "none", background: "#1e88e5", color: "white", fontWeight: 700, cursor: "pointer", flexShrink: 0 }}
+        aria-label={playing ? "Pause" : atEnd ? "Replay" : "Play"}
+        title={playing ? "Pause" : atEnd ? "Replay from the start" : "Play"}
       >
-        {playing ? "❚❚" : "▶"}
+        {playing ? "❚❚" : atEnd ? "↺" : "▶"}
       </button>
       <div style={{ flex: 1 }}>
         <input
           type="range"
-          min={YEAR_START}
-          max={YEAR_END}
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
+          min={0}
+          max={MONTHS_TOTAL - 1}
+          value={month}
+          onChange={(e) => {
+            setPlaying(false);
+            setMonth(Number(e.target.value));
+          }}
           style={{ width: "100%" }}
+          aria-label="Month"
         />
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#90a4ae" }}>
           <span>{YEAR_START}</span>
+          <span title="The model steps once a year. Months in between are interpolated for display.">model steps yearly · months interpolate</span>
           <span>{YEAR_END}</span>
         </div>
       </div>
-      <div style={{ textAlign: "right", minWidth: 80 }}>
-        <div style={{ fontSize: 20, fontWeight: 800 }}>{year}</div>
-        <div style={{ fontSize: 11, color: "#607d8b" }}>{fmt(activeMW)} MW running</div>
+      <div style={{ textAlign: "right", minWidth: 110 }}>
+        <div style={{ fontSize: 18, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{monthLabel(YEAR_START, month)}</div>
+        <div style={{ fontSize: 11, color: "#607d8b" }}>{status}</div>
       </div>
     </div>
   );
@@ -136,9 +151,10 @@ export function SettingsPanel({
   const select: CSSProperties = { width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #cfd8dc", background: "white" };
 
   return (
-    <div style={{ ...panel, top: 190, right: 16, width: 260, padding: 16 }}>
-      <div style={{ fontSize: 12, color: "#607d8b" }}>Data center</div>
-      <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 14 }}>{preset.name}</div>
+    <div style={{ ...panel, top: 190, right: 16, width: 270, padding: 16, maxHeight: "calc(100vh - 300px)", overflowY: "auto" }}>
+      <div style={stepTag}>2 · Deal terms</div>
+      <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 2 }}>{preset.name}</div>
+      <div style={{ fontSize: 12, color: "#607d8b", marginBottom: 14 }}>Change anything. The impacts update as you do.</div>
 
       <div style={field}>
         <div style={label}>Size: <b>{settings.mw} MW</b></div>
@@ -191,6 +207,32 @@ export function SettingsPanel({
         />
       </div>
 
+      <div style={field}>
+        <div style={label}>Tax break lasts</div>
+        <select
+          value={settings.abatementYears}
+          onChange={(e) => onChange({ ...settings, abatementYears: Number(e.target.value) })}
+          style={select}
+        >
+          <option value={10}>10 years</option>
+          <option value={15}>15 years</option>
+          <option value={30}>30 years</option>
+        </select>
+      </div>
+
+      <div style={field}>
+        <div style={label}>Who pays for the grid upgrades</div>
+        <select
+          value={settings.tariffHolds ? "dc" : "everyone"}
+          onChange={(e) => onChange({ ...settings, tariffHolds: e.target.value === "dc" })}
+          style={select}
+          title="Whether a large-load tariff makes the data center pay for its own transmission upgrades, or the cost is spread across every customer"
+        >
+          <option value="dc">The data center (large-load tariff)</option>
+          <option value="everyone">Everyone&apos;s bills (no tariff)</option>
+        </select>
+      </div>
+
       <button
         onClick={onRemove}
         style={{ width: "100%", padding: "8px 0", borderRadius: 8, border: "1px solid #e53935", background: "white", color: "#e53935", fontWeight: 600, cursor: "pointer" }}
@@ -236,8 +278,8 @@ function AnimatedNumber({ value, format }: { value: number; format: (n: number) 
   return <>{format(shown)}</>;
 }
 
-// Tiny trend line across all years, with a dot on the current year
-function Sparkline({ series, index, color }: { series: number[]; index: number; color: string }) {
+// Tiny trend line across all years, with a dot at the current (fractional) point in time
+function Sparkline({ series, t, color }: { series: number[]; t: number; color: string }) {
   const w = 54;
   const h = 16;
   const min = Math.min(0, ...series);
@@ -249,7 +291,7 @@ function Sparkline({ series, index, color }: { series: number[]; index: number; 
   return (
     <svg width={w} height={h} style={{ flexShrink: 0, overflow: "visible" }} aria-hidden>
       <path d={d} fill="none" stroke={color} strokeWidth={1.5} strokeOpacity={0.55} />
-      <circle cx={x(index)} cy={y(series[index] ?? 0)} r={2.6} fill={color} />
+      <circle cx={x(t)} cy={y(interpSeries(series, t))} r={2.6} fill={color} />
     </svg>
   );
 }
@@ -261,23 +303,23 @@ function Row({
   get,
   format,
   results,
-  index,
+  t,
   color,
 }: {
   label: string;
   get: Getter;
   format: (n: number) => string;
   results: YearResult[];
-  index: number;
+  t: number; // fractional index into results
   color: string;
 }) {
   const series = useMemo(() => results.map(get), [results, get]);
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 3 }}>
       <span style={{ color: "#546e7a", flex: 1 }}>{label}</span>
-      <Sparkline series={series} index={index} color={color} />
+      <Sparkline series={series} t={t} color={color} />
       <span style={{ fontWeight: 700, whiteSpace: "nowrap", minWidth: 74, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-        <AnimatedNumber value={series[index] ?? 0} format={format} />
+        <AnimatedNumber value={interpSeries(series, t)} format={format} />
       </span>
     </div>
   );
@@ -302,26 +344,34 @@ const G = {
 
 export function ImpactsPanel({
   results,
-  year,
+  t,
+  timeLabel,
+  status,
   homesInZone,
 }: {
   results: YearResult[];
-  year: number;
+  t: number; // fractional index into results (months / 12)
+  timeLabel: string;
+  status: string;
   homesInZone: number;
 }) {
-  const index = Math.max(0, results.findIndex((x) => x.year === year));
-  const r = results[index];
-  const rowProps = { results, index };
+  const r = useMemo(() => interpResult(results, t), [results, t]);
+  const rowProps = { results, t };
   return (
     <div style={{ ...panel, top: 78, left: 16, width: 330, padding: 16, maxHeight: "calc(100vh - 240px)", overflowY: "auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-        <div style={{ fontSize: 18, fontWeight: 800 }}>Impacts in {r.year}</div>
-        <div style={{ fontSize: 12, color: "#607d8b" }}>{fmt(r.active_mw)} MW</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+        <div>
+          <div style={stepTag}>3 · Impacts</div>
+          <div style={{ fontSize: 18, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{timeLabel}</div>
+        </div>
+        <div style={{ fontSize: 12, color: "#607d8b", textAlign: "right", paddingBottom: 3 }}>{status}</div>
       </div>
 
-      {r.active_mw === 0 ? (
-        <div style={{ fontSize: 13, color: "#546e7a", marginBottom: 14 }}>Not running yet. Drag the year slider forward.</div>
-      ) : null}
+      {r.active_mw < 0.5 ? (
+        <div style={{ fontSize: 13, color: "#546e7a", margin: "8px 0 14px" }}>Nothing running yet — press play, or drag the timeline.</div>
+      ) : (
+        <div style={{ height: 8 }} />
+      )}
 
       <Section title="Water" color="#1e88e5">
         <Row {...rowProps} color="#1e88e5" label="Water used per day" get={G.water} format={(n) => `${fmt(n, 2)} M gal`} />
