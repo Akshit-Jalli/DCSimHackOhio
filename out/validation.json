@@ -1,0 +1,216 @@
+{
+  "checks": [
+    {
+      "tier": 1,
+      "name": "energy identity: MWh = MW x PUE x 8760 x LF",
+      "passed": true,
+      "detail": "3,011,250.0 vs 3,011,250.0",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "zero MW produces zero energy",
+      "passed": true,
+      "detail": "",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "phase schedule is monotonic non-decreasing",
+      "passed": true,
+      "detail": "[0.0, 0.0, 100.0, 300.0, 500.0, 500.0, 500.0, 500.0]...",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "phase schedule reaches full contract capacity",
+      "passed": true,
+      "detail": "max 500.0 MW vs contract 500 MW",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "fixed seed is deterministic",
+      "passed": true,
+      "detail": "",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "counterfactual has zero MW, energy and jobs in every year",
+      "passed": true,
+      "detail": "",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "monotonic: 1000 MW emits more CO2 than 500 MW",
+      "passed": true,
+      "detail": "5,291,971 vs 2,645,985",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "unit conversion: L <-> Mgal round trip",
+      "passed": true,
+      "detail": "",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "noise falls with distance and by ~6 dB per doubling",
+      "passed": true,
+      "detail": "60.3 dBA at 500 ft, 54.3 dBA at 1000 ft, drop 6.02",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "feedback loops do not contaminate the energy channel",
+      "passed": true,
+      "detail": "",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "feedback loops DO change rent (loop is actually wired up)",
+      "passed": true,
+      "detail": "190.40 vs 170.00",
+      "kind": ""
+    },
+    {
+      "tier": 2,
+      "name": "[CIRCULAR] reproduce Wilmington local capacity per pupil",
+      "passed": true,
+      "detail": "6,607.84 vs 6,607.84",
+      "kind": "circular"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT] reproduce Wilmington state funding",
+      "passed": true,
+      "detail": "2,954,304.17 vs 2,954,310.00  (rel err 1.97e-06)",
+      "kind": "independent"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT] reproduce Wilmington 10% floor value",
+      "passed": true,
+      "detail": "1,606,069.05 vs 1,606,072.00  (rel err 1.84e-06)",
+      "kind": "independent"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT, OUT-OF-SAMPLE] floor detection on Johnstown-Monroe",
+      "passed": true,
+      "detail": "local/base = 0.9803 > 0.90 so the floor binds, matching DEW's reported 9.4% share",
+      "kind": "independent"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT] saturation threshold near independently derived $326M",
+      "passed": true,
+      "detail": "floor first binds at $326M; independent derivation gave ~$326M",
+      "kind": "independent"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT] max state-aid loss matches independent derivation",
+      "passed": true,
+      "detail": "1,348,235.12 vs 1,348,238.00  (rel err 2.14e-06)",
+      "kind": "independent"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT] loss is flat from $500M to $4B",
+      "passed": true,
+      "detail": "all 4 points equal $1,348,235.12",
+      "kind": "independent"
+    },
+    {
+      "tier": 3,
+      "name": "p50 at N=1000 is within 2% of N=5000",
+      "passed": true,
+      "detail": "drift 0.291% \u2014 more draws buy precision about assumptions, not reality",
+      "kind": ""
+    },
+    {
+      "tier": 4,
+      "name": "assumption-driven coefficients are a minority of the set",
+      "passed": true,
+      "detail": "12/46 = 26.1% are 'assumed'",
+      "kind": ""
+    }
+  ],
+  "convergence": [
+    {
+      "n": 100,
+      "p50": 1.2219493962487415,
+      "p10": 0.4955898741050521,
+      "p90": 2.1068662392204103
+    },
+    {
+      "n": 250,
+      "p50": 1.205864254551498,
+      "p10": 0.4469905112214999,
+      "p90": 2.185480345029507
+    },
+    {
+      "n": 500,
+      "p50": 1.1906711150127807,
+      "p10": 0.44444986249759033,
+      "p90": 2.1641296902958187
+    },
+    {
+      "n": 1000,
+      "p50": 1.1784462963200455,
+      "p10": 0.4356576112104529,
+      "p90": 2.1751826765489644
+    },
+    {
+      "n": 2500,
+      "p50": 1.183244968356226,
+      "p10": 0.4319901689055065,
+      "p90": 2.1835064226526666
+    },
+    {
+      "n": 5000,
+      "p50": 1.1750218941700008,
+      "p10": 0.43476214576184224,
+      "p90": 2.2008211538103133
+    }
+  ],
+  "epistemic_audit": {
+    "coefficient_buckets": {
+      "assumed/low": 12,
+      "empirical/high": 12,
+      "empirical/low": 2,
+      "empirical/medium": 10,
+      "physical/high": 10
+    },
+    "assumed_fraction": 0.261,
+    "per_output_audit": {
+      "permanent_fte": {
+        "assumption_driven_share_of_top3_swing": 0.0,
+        "top_driver": "permanent_jobs_per_mw",
+        "top_driver_method": "empirical"
+      },
+      "water_indirect_mgal": {
+        "assumption_driven_share_of_top3_swing": 0.0,
+        "top_driver": "water_indirect_l_per_kwh",
+        "top_driver_method": "empirical"
+      },
+      "backlash_index": {
+        "assumption_driven_share_of_top3_swing": 1.0,
+        "top_driver": "backlash_index_per_usd_bill",
+        "top_driver_method": "assumed"
+      },
+      "cash_rent_usd_per_acre": {
+        "assumption_driven_share_of_top3_swing": 1.0,
+        "top_driver": "land_value_premium_pct_per_100mw",
+        "top_driver_method": "assumed"
+      }
+    }
+  },
+  "worst_independent_relative_error": 2.1361213672127928e-06,
+  "disclaimer": "Validates implementation and one module's formula replication. Does NOT validate forecast accuracy."
+}
