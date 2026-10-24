@@ -188,7 +188,9 @@ async function downloadLayer(dir: string, layer: LayerName, bbox: Town["bbox"]) 
 // ---------- Shrinking ----------
 // Keep only the fields the map uses and round coordinates to 6 decimals (~10 cm).
 
-type Feature = { geometry: { type: string; coordinates: unknown } | null; properties: Record<string, any> | null };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- raw Overture properties, shape varies by layer
+type Props = Record<string, any>;
+type Feature = { geometry: { type: string; coordinates: unknown } | null; properties: Props | null };
 
 function roundCoords(c: unknown): unknown {
   if (typeof c === "number") return Math.round(c * 1e6) / 1e6;
@@ -209,7 +211,7 @@ function roughArea(geom: Feature["geometry"]) {
   return total;
 }
 
-const KEEP: Record<LayerName, (p: Record<string, any>) => Record<string, any> | null> = {
+const KEEP: Record<LayerName, (p: Props) => Props | null> = {
   buildings: (p) => ({ height: p.height, num_floors: p.num_floors }),
   landcover: (p) => {
     let c = p.cartography;

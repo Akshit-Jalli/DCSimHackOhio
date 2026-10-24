@@ -2,7 +2,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import type { Badge, Label } from "./labels";
-import { CLIP, HEIGHT_SCALE, MAP_HALF, toXY } from "./mapConfig";
+import { CLIP, HEIGHT_SCALE, MAP_HALF, layerUrl, toXY } from "./mapConfig";
 import type { YearResult } from "./sim/types";
 
 // Key places in Wilmington (picked by hand from the Overture places data)
@@ -155,7 +155,7 @@ export default function Landmarks({
   } | null>(null);
 
   useEffect(() => {
-    fetch("/infrastructure.geojson")
+    fetch(layerUrl("infrastructure"))
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!data) return;
