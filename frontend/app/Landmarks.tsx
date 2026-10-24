@@ -5,28 +5,69 @@ import type { Badge, Label } from "./labels";
 import { CLIP, HEIGHT_SCALE, MAP_HALF, layerUrl, toXY } from "./mapConfig";
 import type { YearResult } from "./sim/types";
 
-// Key places in Wilmington (picked by hand from the Overture places data)
-type Kind = "school" | "college" | "hospital" | "fire" | "cityhall" | "water";
-const PLACES: { kind: Kind; name: string; lon: number; lat: number }[] = [
-  { kind: "school", name: "Wilmington Middle & High School", lon: -83.8391, lat: 39.4492 },
-  { kind: "school", name: "Roy E. Holmes Elementary", lon: -83.8485, lat: 39.4323 },
-  { kind: "school", name: "J. Warren Killam Elementary", lon: -83.8268, lat: 39.4406 },
-  { kind: "school", name: "East End Elementary", lon: -83.8153, lat: 39.4469 },
-  { kind: "school", name: "Denver Place Elementary", lon: -83.823, lat: 39.4549 },
-  { kind: "college", name: "Wilmington College", lon: -83.8194, lat: 39.4443 },
-  { kind: "college", name: "Laurel Oaks Career Campus", lon: -83.7893, lat: 39.4279 },
-  { kind: "college", name: "Southern State Community College", lon: -83.8194, lat: 39.4196 },
-  { kind: "hospital", name: "Clinton Memorial Hospital", lon: -83.84, lat: 39.4441 },
-  { kind: "fire", name: "Wilmington Fire Department", lon: -83.8279, lat: 39.4441 },
-  { kind: "cityhall", name: "City Hall", lon: -83.8289, lat: 39.4463 },
-  { kind: "water", name: "Wilmington Water Treatment", lon: -83.8088, lat: 39.4549 },
+// Key places, picked from the town's places data (Overture).
+// The data is noisy (clinics tagged "hospital", college departments tagged "college"),
+// so some kinds also check the name. cats = Overture basic_category ([] = any category).
+type Kind = "school" | "college" | "hospital" | "fire" | "police" | "cityhall" | "water";
+const RULES: { kind: Kind; cats: string[]; name?: RegExp; notName?: RegExp }[] = [
+  { kind: "school", cats: ["elementary_school", "middle_school", "high_school"], notName: /education service|board of education|district|\bpto\b|\bpta\b|booster/i },
+  { kind: "college", cats: ["college_university"], name: /college|university|campus/i, notName: /program|department|athletic|extension|heritage|\bhall\b|\bdr\.? /i },
+  { kind: "hospital", cats: ["hospital"], name: /hospital|medical center|regional/i, notName: /physician|home health|primary care|clinic|associates|practice|animal|veterinar|\bpet\b/i },
+  { kind: "fire", cats: ["fire_station"] },
+  { kind: "police", cats: ["police_station"] },
+  { kind: "cityhall", cats: ["city_hall", "town_hall"] },
+  { kind: "cityhall", cats: ["government_office", "government_department"], name: /city hall|town hall|village hall|municipal building/i },
+  { kind: "water", cats: ["water_utility_provider"], name: /water/i, notName: /billing|fountain/i },
+  { kind: "water", cats: [], name: /water (treatment|plant|works|reclamation)|wastewater|water pollution control|sewage treatment/i },
 ];
+// Pins of the same kind closer than "merge" meters become one (e.g. 70 Ohio University departments). At most "max" per kind.
+const LIMITS: Record<Kind, { merge: number; max: number }> = {
+  school: { merge: 150, max: 12 },
+  college: { merge: 800, max: 4 },
+  hospital: { merge: 500, max: 4 },
+  fire: { merge: 300, max: 6 },
+  police: { merge: 300, max: 4 },
+  cityhall: { merge: 300, max: 2 },
+  water: { merge: 300, max: 3 },
+};
+
+type Place = { kind: Kind; name: string; xz: [number, number] };
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- GeoJSON features
+function pickPlaces(features: any[]): Place[] {
+  const found: (Place & { conf: number })[] = [];
+  for (const f of features) {
+    const p = f.properties || {};
+    const g = f.geometry;
+    if (!g || g.type !== "Point") continue;
+    if (/closed/.test(p.operating_status || "") || (p.confidence ?? 1) < 0.5) continue;
+    const name: string = p.name ?? p.names?.primary ?? ""; // public/ fallback file has the raw "names"
+    const cat: string = p.basic_category ?? "";
+    const rule = RULES.find((r) => (!r.cats.length || r.cats.includes(cat)) && (!r.name || r.name.test(name)) && !r.notName?.test(name));
+    if (!rule || !name || /cemetery/i.test(name)) continue;
+    const xz = scenePos(g.coordinates[0], g.coordinates[1]);
+    if (Math.abs(xz[0]) > MAP_HALF || Math.abs(xz[1]) > MAP_HALF) continue;
+    found.push({ kind: rule.kind, name, xz, conf: p.confidence ?? 0 });
+  }
+  // Most confident first, then skip near-duplicates and extras
+  found.sort((a, b) => b.conf - a.conf);
+  const kept: Place[] = [];
+  for (const c of found) {
+    const { merge, max } = LIMITS[c.kind];
+    const same = kept.filter((k) => k.kind === c.kind);
+    if (same.length >= max) continue;
+    if (same.some((k) => Math.hypot(k.xz[0] - c.xz[0], k.xz[1] - c.xz[1]) < merge)) continue;
+    kept.push({ kind: c.kind, name: c.name, xz: c.xz });
+  }
+  return kept;
+}
 
 const ICON: Record<Kind | "tower" | "substation", string> = {
   school: "🏫",
   college: "🎓",
   hospital: "🏥",
   fire: "🚒",
+  police: "🚓",
   cityhall: "🏛️",
   water: "💧",
   tower: "💧",
@@ -187,7 +228,14 @@ export default function Landmarks({
       });
   }, []);
 
-  const places = useMemo(() => PLACES.map((p) => ({ ...p, xz: scenePos(p.lon, p.lat) })), []);
+  // Schools, hospital, fire, police, city hall, water plant
+  const [places, setPlaces] = useState<Place[]>([]);
+  useEffect(() => {
+    fetch(layerUrl("places"))
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => data && setPlaces(pickPlaces(data.features)))
+      .catch(() => {});
+  }, []);
 
   // Nearest substation to the data center = where it would hook into the grid
   const hookup = useMemo(() => {

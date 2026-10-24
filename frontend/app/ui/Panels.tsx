@@ -348,12 +348,14 @@ export function ImpactsPanel({
   timeLabel,
   status,
   homesInZone,
+  otherTown,
 }: {
   results: YearResult[];
   t: number; // fractional index into results (months / 12)
   timeLabel: string;
   status: string;
   homesInZone: number;
+  otherTown: boolean; // fake engine only knows Wilmington's water/schools/taxes
 }) {
   const r = useMemo(() => interpResult(results, t), [results, t]);
   const rowProps = { results, t };
@@ -366,6 +368,11 @@ export function ImpactsPanel({
         </div>
         <div style={{ fontSize: 12, color: "#607d8b", textAlign: "right", paddingBottom: 3 }}>{status}</div>
       </div>
+      {otherTown && (
+        <div style={{ fontSize: 11, color: "#ef6c00", background: "#fff3e0", borderRadius: 6, padding: "4px 8px", margin: "8px 0 0" }}>
+          Baseline is Wilmington, Ohio&apos;s. School, water and tax figures use its numbers until this town has its own.
+        </div>
+      )}
 
       {r.active_mw < 0.5 ? (
         <div style={{ fontSize: 13, color: "#546e7a", margin: "8px 0 14px" }}>Nothing running yet — press play, or drag the timeline.</div>

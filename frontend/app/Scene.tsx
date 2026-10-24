@@ -11,7 +11,8 @@ import Trees from "./Trees";
 import Landmarks from "./Landmarks";
 import { LabelLayer, LabelProjector, type Label } from "./labels";
 import { night, lerp } from "./night";
-import { TILE, GRID, MAP_HALF, MAP_SIZE, toLatLon } from "./mapConfig";
+import { TILE, GRID, MAP_HALF, MAP_SIZE, toLatLon, type TownInfo } from "./mapConfig";
+import type { TownPick } from "@/lib/towns";
 import {
   PRESETS,
   YEAR_END,
@@ -26,6 +27,8 @@ import type { SimInput } from "./sim/types";
 import { runSimulation } from "./sim/engine";
 import { interpResult, monthLabel, nightFromMonth } from "./sim/interp";
 import { BuildMenu, ImpactsPanel, MONTHS_TOTAL, SettingsPanel, YearBar, panel } from "./ui/Panels";
+import { LoadingScreen } from "./ui/LoadingScreen";
+import { TownSearch } from "./ui/TownSearch";
 
 const MS_PER_MONTH = 75; // autoplay: 192 months in about 14 seconds
 type NightMode = "auto" | "day" | "night";
@@ -44,7 +47,6 @@ const SKY_BELOW = "#d8dccf";
 const NIGHT_TOP = "#0a1430";
 const NIGHT_HORIZON = "#2b3a63";
 const NIGHT_BELOW = "#151b2b";
-const UI_FONT = "var(--font-geist-sans), system-ui, sans-serif";
 
 // Gradient sky dome, drawn behind everything
 function Sky() {
@@ -279,7 +281,7 @@ function Hud({
   return null;
 }
 
-export default function Scene() {
+export default function Scene({ town, onPickTown }: { town: TownInfo; onPickTown: (t: TownPick) => void }) {
   // What's placed
   const [settings, setSettings] = useState<Settings | null>(null);
   const [pos, setPos] = useState<[number, number] | null>(null);
@@ -373,7 +375,7 @@ export default function Scene() {
     const mw = settings.mw;
     return {
       site: {
-        fips_county: "39027", // Clinton County, OH
+        fips_county: town.countyFips ?? "",
         lat,
         lon,
         acres: tiles * tiles * 20,
@@ -402,7 +404,7 @@ export default function Scene() {
       },
       horizon: { start_year: YEAR_START, end_year: YEAR_END },
     };
-  }, [settings, preset, pos, tiles]);
+  }, [settings, preset, pos, tiles, town.countyFips]);
 
   const results = useMemo(
     () => (input ? runSimulation(input, { nearestResidenceM }) : null),
@@ -569,7 +571,7 @@ export default function Scene() {
         {/* Tile grid only shows while dragging */}
         {dragging && <gridHelper args={[MAP_SIZE, GRID]} position={[0, 3.6, 0]} />}
 
-        {/* Real Wilmington buildings (turn red inside the loud zone) */}
+        {/* Real buildings (turn red inside the loud zone) */}
         <Buildings
           onLoaded={(c, cents) => {
             setCounts(c);
@@ -633,14 +635,14 @@ export default function Scene() {
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1, background: isNight ? "radial-gradient(ellipse at center, transparent 45%, rgba(5,10,30,0.45) 100%)" : "radial-gradient(ellipse at center, transparent 55%, rgba(20,40,60,0.22) 100%)", transition: "background 1s" }} />
 
       {/* App header and reset view */}
-      <div style={{ position: "absolute", top: 16, left: 16, display: "flex", gap: 10, alignItems: "stretch", zIndex: 10 }}>
+      <div style={{ position: "absolute", top: 16, left: 16, display: "flex", gap: 10, alignItems: "stretch", zIndex: 12 }}>
         <div style={{ ...panel, position: "relative", padding: "8px 14px 8px 8px", display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg, #1e88e5, #43a047)", color: "white", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", letterSpacing: 0.5 }}>
             DC
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>DCSim</div>
-            <div style={{ fontSize: 11, color: "#607d8b" }}>Wilmington, Ohio</div>
+            <TownSearch current={`${town.name}, ${town.state}`} onPick={onPickTown} />
           </div>
         </div>
         <button
@@ -683,7 +685,7 @@ export default function Scene() {
 
       {/* Left: impacts */}
       {placed && rI && results && (
-        <ImpactsPanel results={results} t={t} timeLabel={timeLabel} status={status} homesInZone={homesInZone} />
+        <ImpactsPanel results={results} t={t} timeLabel={timeLabel} status={status} homesInZone={homesInZone} otherTown={town.slug !== "wilmington-oh"} />
       )}
 
       {/* Right: settings */}
@@ -709,37 +711,8 @@ export default function Scene() {
         </div>
       </div>
 
-      {/* Loading screen */}
-      <style>{`@keyframes dcpulse { 0%, 80%, 100% { opacity: 0.25 } 40% { opacity: 1 } }`}</style>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: `linear-gradient(180deg, ${SKY_TOP} 0%, ${SKY_HORIZON} 100%)`,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 14,
-          color: "#263238",
-          fontFamily: UI_FONT,
-          opacity: loading ? 1 : 0,
-          pointerEvents: loading ? "auto" : "none",
-          transition: "opacity 0.8s",
-          zIndex: 30,
-        }}
-      >
-        <div style={{ width: 56, height: 56, borderRadius: 16, background: "linear-gradient(135deg, #1e88e5, #43a047)", color: "white", fontWeight: 800, fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(0,0,0,0.2)" }}>
-          DC
-        </div>
-        <div style={{ fontSize: 26, fontWeight: 800 }}>DCSim</div>
-        <div style={{ fontSize: 14, color: "#455a64", display: "flex", alignItems: "center", gap: 6 }}>
-          Loading Wilmington, Ohio
-          {[0, 1, 2].map((i) => (
-            <span key={i} style={{ width: 6, height: 6, borderRadius: 3, background: "#455a64", animation: `dcpulse 1.2s ${i * 0.2}s infinite` }} />
-          ))}
-        </div>
-      </div>
+      {/* Loading screen (fades out once the map is built) */}
+      <LoadingScreen visible={loading} title={`Loading ${town.name}, ${town.state}`} />
     </div>
   );
 }

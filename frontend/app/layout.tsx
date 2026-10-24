@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DCSim · Wilmington, OH",
-  description: "See what a data center would do to Wilmington, Ohio",
+  title: "DCSim",
+  description: "See what a data center would do to a US town",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

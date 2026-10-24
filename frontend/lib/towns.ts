@@ -267,6 +267,13 @@ export async function readTown(slug: string): Promise<Town | null> {
   }
 }
 
+// Every town that's fully downloaded, A-Z
+export async function listTowns(): Promise<Town[]> {
+  const names = await fs.readdir(TOWNS_DIR).catch(() => [] as string[]);
+  const towns = await Promise.all(names.filter(isValidSlug).map(readTown));
+  return towns.filter((t): t is Town => !!t).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export async function townStatus(slug: string): Promise<TownStatus> {
   const job = jobs.get(slug);
   if (job?.error) return { state: "error", error: job.error };
