@@ -1,5 +1,5 @@
-import Scene from "./Scene";
+import TownApp from "./TownApp";
 
 export default function Home() {
-  return <Scene />;
+  return <TownApp />;
 }

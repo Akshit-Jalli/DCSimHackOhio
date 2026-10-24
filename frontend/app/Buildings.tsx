@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { CLIP, GRID, HEIGHT_SCALE, tileOf, toXY } from "./mapConfig";
+import { CLIP, GRID, HEIGHT_SCALE, layerUrl, tileOf, toXY } from "./mapConfig";
 import { night } from "./night";
 
 // Wall and roof colors by building size: homes, mid-size (shops, churches), big (warehouses, plants)
@@ -105,7 +105,7 @@ export default function Buildings({
   }, [noiseCenter, noiseRadius, lot, uniforms]);
 
   useEffect(() => {
-    fetch("/buildings.geojson")
+    fetch(layerUrl("buildings"))
       .then((r) => r.json())
       .then((data) => {
         const parts: THREE.BufferGeometry[] = [];

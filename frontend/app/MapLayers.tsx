@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { night } from "./night";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { CLIP, GRID, MAP_HALF, TILE, toXY } from "./mapConfig";
+import { CLIP, GRID, MAP_HALF, TILE, layerUrl, toXY } from "./mapConfig";
 
 // Colors for each type of land
 const LAND_COLORS: Record<string, string> = {
@@ -173,9 +173,9 @@ export default function MapLayers({
 
   useEffect(() => {
     Promise.all([
-      fetch("/landcover.geojson").then((r) => r.json()),
-      fetch("/water.geojson").then((r) => r.json()),
-      fetch("/roads.geojson").then((r) => r.json()),
+      fetch(layerUrl("landcover")).then((r) => r.json()),
+      fetch(layerUrl("water")).then((r) => r.json()),
+      fetch(layerUrl("roads")).then((r) => r.json()),
     ]).then(([land, water, roads]) => {
       const result: Layer[] = [];
       const blocked = new Uint8Array(GRID * GRID); // tiles where you can't build

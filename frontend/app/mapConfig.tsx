@@ -1,10 +1,25 @@
 import * as THREE from "three";
 
-// Center of the map (downtown Wilmington)
-export const LAT0 = 39.43611;
-export const LON0 = -83.81389;
+// Center of the map. Set by setTown() before the map mounts (default: downtown Wilmington)
+export let LAT0 = 39.43611;
+export let LON0 = -83.81389;
 const M_PER_DEG_LAT = 110540;
-const M_PER_DEG_LON = 111320 * Math.cos((LAT0 * Math.PI) / 180);
+let M_PER_DEG_LON = 111320 * Math.cos((LAT0 * Math.PI) / 180);
+let dataUrl = (layer: string) => `/api/town/wilmington-oh/${layer}`;
+
+// Switch the map to a town (from /api/town/<slug>). Call before rendering the scene.
+// fromPublic: read the old committed Wilmington files in public/ instead of the town cache.
+export function setTown(town: { slug: string; lat: number; lon: number }, fromPublic = false) {
+  dataUrl = fromPublic ? (layer) => `/${layer}.geojson` : (layer) => `/api/town/${town.slug}/${layer}`;
+  LAT0 = town.lat;
+  LON0 = town.lon;
+  M_PER_DEG_LON = 111320 * Math.cos((LAT0 * Math.PI) / 180);
+}
+
+// URL of one of the current town's data files (buildings, roads, ...)
+export function layerUrl(layer: "buildings" | "landcover" | "roads" | "water" | "places" | "infrastructure") {
+  return dataUrl(layer);
+}
 
 // Grid and map size
 export const TILE = 285; // meters per tile (20 acres)
