@@ -1,0 +1,223 @@
+{
+  "checks": [
+    {
+      "tier": 1,
+      "name": "energy identity: MWh = MW x PUE x 8760 x LF (evaporative, no penalty)",
+      "passed": true,
+      "detail": "3,011,250.0 vs 3,011,250.0",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "air cooling carries the documented energy penalty",
+      "passed": true,
+      "detail": "air 3,613,500 vs evap 3,011,250, penalty 20%",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "zero MW produces zero energy",
+      "passed": true,
+      "detail": "",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "phase schedule is monotonic non-decreasing",
+      "passed": true,
+      "detail": "[0.0, 0.0, 100.0, 300.0, 500.0, 500.0, 500.0, 500.0]...",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "phase schedule reaches full contract capacity",
+      "passed": true,
+      "detail": "max 500.0 MW vs contract 500 MW",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "fixed seed is deterministic",
+      "passed": true,
+      "detail": "",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "counterfactual has zero MW, energy and jobs in every year",
+      "passed": true,
+      "detail": "",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "monotonic: 1000 MW emits more CO2 than 500 MW",
+      "passed": true,
+      "detail": "6,350,365 vs 3,175,182",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "unit conversion: L <-> Mgal round trip",
+      "passed": true,
+      "detail": "",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "noise falls with distance and by ~6 dB per doubling",
+      "passed": true,
+      "detail": "60.3 dBA at 500 ft, 54.3 dBA at 1000 ft, drop 6.02",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "feedback loops do not contaminate the energy channel",
+      "passed": true,
+      "detail": "",
+      "kind": ""
+    },
+    {
+      "tier": 1,
+      "name": "feedback loops DO change rent (loop is actually wired up)",
+      "passed": true,
+      "detail": "190.40 vs 170.00",
+      "kind": ""
+    },
+    {
+      "tier": 2,
+      "name": "[CIRCULAR] reproduce Wilmington local capacity per pupil",
+      "passed": true,
+      "detail": "6,607.84 vs 6,607.84",
+      "kind": "circular"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT] reproduce Wilmington state funding",
+      "passed": true,
+      "detail": "2,954,304.17 vs 2,954,310.00  (rel err 1.97e-06)",
+      "kind": "independent"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT] reproduce Wilmington 10% floor value",
+      "passed": true,
+      "detail": "1,606,069.05 vs 1,606,072.00  (rel err 1.84e-06)",
+      "kind": "independent"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT, OUT-OF-SAMPLE] floor detection on Johnstown-Monroe",
+      "passed": true,
+      "detail": "local/base = 0.9803 > 0.90 so the floor binds, matching DEW's reported 9.4% share",
+      "kind": "independent"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT] saturation threshold near independently derived $326M",
+      "passed": true,
+      "detail": "floor first binds at $326M; independent derivation gave ~$326M",
+      "kind": "independent"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT] max state-aid loss matches independent derivation",
+      "passed": true,
+      "detail": "1,348,235.12 vs 1,348,238.00  (rel err 2.14e-06)",
+      "kind": "independent"
+    },
+    {
+      "tier": 2,
+      "name": "[INDEPENDENT] loss is flat from $500M to $4B",
+      "passed": true,
+      "detail": "all 4 points equal $1,348,235.12",
+      "kind": "independent"
+    },
+    {
+      "tier": 3,
+      "name": "p50 at N=1000 within 3 SE (7.0%) of N=5000",
+      "passed": true,
+      "detail": "drift 3.34%, 1 SE = 2.35% \u2014 the realistic N=1000 error for this metric is 2-3%, not the 0.29% one earlier sequence happened to show",
+      "kind": ""
+    },
+    {
+      "tier": 4,
+      "name": "assumption-driven coefficients are a minority of the set",
+      "passed": true,
+      "detail": "13/50 = 26.0% are 'assumed'",
+      "kind": ""
+    }
+  ],
+  "convergence": [
+    {
+      "n": 100,
+      "p50": 1.1543004742027492,
+      "p10": 0.4358472291630109,
+      "p90": 1.9878250682977892
+    },
+    {
+      "n": 250,
+      "p50": 1.1703007273011066,
+      "p10": 0.4492287536975484,
+      "p90": 2.076248565005379
+    },
+    {
+      "n": 500,
+      "p50": 1.195611912452224,
+      "p10": 0.46675218155181586,
+      "p90": 2.186043461940941
+    },
+    {
+      "n": 1000,
+      "p50": 1.214141375986045,
+      "p10": 0.45992043998375,
+      "p90": 2.2345646747792185
+    },
+    {
+      "n": 2500,
+      "p50": 1.1766562364138156,
+      "p10": 0.4346470974798894,
+      "p90": 2.217634192293468
+    },
+    {
+      "n": 5000,
+      "p50": 1.1748842893320148,
+      "p10": 0.42901239836929317,
+      "p90": 2.2112381393541143
+    }
+  ],
+  "epistemic_audit": {
+    "coefficient_buckets": {
+      "assumed/low": 13,
+      "empirical/high": 12,
+      "empirical/low": 3,
+      "empirical/medium": 12,
+      "physical/high": 10
+    },
+    "assumed_fraction": 0.26,
+    "per_output_audit": {
+      "permanent_fte": {
+        "assumption_driven_share_of_top3_swing": 0.0,
+        "top_driver": "permanent_jobs_per_mw",
+        "top_driver_method": "empirical"
+      },
+      "water_indirect_mgal": {
+        "assumption_driven_share_of_top3_swing": 0.0,
+        "top_driver": "water_indirect_l_per_kwh",
+        "top_driver_method": "empirical"
+      },
+      "backlash_index": {
+        "assumption_driven_share_of_top3_swing": 1.0,
+        "top_driver": "backlash_index_per_usd_bill",
+        "top_driver_method": "assumed"
+      },
+      "cash_rent_usd_per_acre": {
+        "assumption_driven_share_of_top3_swing": 1.0,
+        "top_driver": "land_value_premium_pct_per_100mw",
+        "top_driver_method": "assumed"
+      }
+    }
+  },
+  "worst_independent_relative_error": 2.1361213672127928e-06,
+  "disclaimer": "Validates implementation and one module's formula replication. Does NOT validate forecast accuracy."
+}

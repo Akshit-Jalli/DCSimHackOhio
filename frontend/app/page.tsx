@@ -1,5 +1,5 @@
-import Scene from "./Scene";
+import Dashboard from "./Dashboard";
 
 export default function Home() {
-  return <Scene />;
+  return <Dashboard />;
 }

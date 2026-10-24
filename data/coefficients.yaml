@@ -1,0 +1,592 @@
+# ---------------------------------------------------------------------------
+# coefficients.yaml — the engine's judgment layer
+#
+# This file is NOT a data pull. Every number here is a sourced judgment call
+# and it is where the project's credibility lives. It needs a named owner.
+#
+# Rules:
+#   - every entry carries value / low / high / unit / source / confidence
+#   - `method` is "physical" (an engineering identity), "empirical" (estimated
+#     from data) or "assumed" (we picked it; say so)
+#   - confidence "low" means unverified or single-sourced from an interested
+#     party. Those drive the Monte Carlo spread and the tornado chart.
+#   - DO NOT strip provenance when loading. The whole pitch is that you can
+#     click any number and see where it came from.
+#
+# as_of: 2026-10-24
+# ---------------------------------------------------------------------------
+
+# === ENERGY ================================================================
+
+pue_new_hyperscale:
+  value: 1.25
+  low: 1.15
+  high: 1.35
+  unit: ratio
+  method: empirical
+  source: "LBNL 2024 US Data Center Energy Usage Report (Shehabi et al.) — fleet 1.4 in 2023, 1.15-1.35 projected 2028; hyperscale and colo already under 1.4"
+  confidence: high
+  note: "Ohio is ASHRAE zone 5A (mixed-humid). Lei & Masanet's zone-specific values exist only in their Figures 4-5 and are not extractable from the text; a citing paper reports ~1.32 for mixed-humid. Treat 1.32 as a second-hand upper anchor."
+
+load_factor:
+  value: 0.55
+  low: 0.50
+  high: 0.60
+  unit: fraction
+  method: empirical
+  source: "Muller, NBER w35100 (2026-04) — load = net utilized kW x PUE x 8760 x load factor"
+  confidence: high
+  note: |
+    CONFLICT TO RESOLVE: the AEP Schedule DCT tariff requires an 85% minimum
+    demand charge, which looks like a utilization floor. It is not the same
+    quantity. The tariff's 85% is a BILLING floor on subscribed capacity;
+    this 0.55 is energy against DESIGN IT capacity. Pick one to drive
+    facility_mwh and record which, or you will double-count.
+    (Moot for Wilmington anyway — AES Ohio, not AEP.)
+
+# === RATEPAYER =============================================================
+# Meeks, Pless, Qi & Wang, MIT CEEPR WP-2026-13 (2026-06-19).
+# CAUSAL: Callaway & Sant'Anna staggered DiD on utility-state pairs, 2010-2024.
+# The ownership split is load-bearing — Wilmington is AES Ohio, INVESTOR-OWNED.
+
+retail_rate_delta_residential_iou:
+  value: 0.052
+  unit: fraction
+  method: empirical
+  source: "Meeks et al. 2026, investor-owned utilities subsample"
+  confidence: high
+  note: "USE THIS ONE for Wilmington. AES Ohio is an IOU."
+
+retail_rate_delta_residential_all:
+  value: 0.021
+  unit: fraction
+  method: empirical
+  source: "Meeks et al. 2026, residential class, pooled"
+  confidence: high
+  note: "Commonly MISLABELLED as the all-customer average. The all-customer figure is 0.027. Label carefully."
+
+retail_rate_delta_residential_public:
+  value: null
+  unit: fraction
+  method: empirical
+  source: "Meeks et al. 2026 — reported as 'smaller' than IOU, no point estimate extracted"
+  confidence: low
+
+retail_rate_delta_residential_coop:
+  value: 0.0
+  unit: fraction
+  method: empirical
+  source: "Meeks et al. 2026 — no measurable effect for cooperatives"
+  confidence: high
+
+# --- AES Ohio data center tariff, PUCO 25-0958-EL-AIR -----------------------
+# Read from the 2026-09-03 tariff exhibit to the 2026-07-21 Stipulation.
+# STATUS: case is OPEN-OPEN, no Commission order yet. These terms are
+# PROPOSED and CONTESTED (OCC, OMAEG, Kroger, CUB, City of Dayton, OPAE and
+# ELPC/OEC all filed briefs). Treat "tariff approved as written" as a LEVER,
+# not a given.
+
+aes_dct_minimum_demand_pct:
+  value: 0.85
+  unit: fraction
+  method: physical
+  source: "AES Ohio tariff exhibit, 2026-09-03 — minimum billing demand is 85% of Contract Capacity, including during ramp"
+  confidence: high
+
+aes_dct_service_term_years:
+  value: 10
+  unit: years
+  method: physical
+  source: "AES Ohio tariff exhibit — minimum 10-year term following ramp completion"
+  confidence: high
+  note: "Shorter than AEP's 12 years."
+
+aes_dct_mw_threshold:
+  value: 25
+  unit: MW
+  method: physical
+  source: "AES Ohio tariff exhibit — aggregate monthly maximum demand > 25,000 kW at a single location"
+  confidence: high
+
+aes_dct_ramp_years:
+  value: 2
+  unit: years
+  method: physical
+  source: "AES Ohio tariff exhibit — maximum 2 years to reach full contract capacity"
+  confidence: high
+  note: |
+    CONFLICT WITH THE PJM DATA. Dayton-2025-002 shows a 2028-2030 ramp
+    (35 -> 100 -> 300 -> 500 MW), which is ~2.75 years from first energization.
+    Either the tariff clock starts at facilities-complete rather than first
+    service, or the PJM need covers more than one customer. Flag in output.
+
+aes_dct_network_upgrade_cost_share_customer:
+  value: 1.00
+  unit: fraction
+  method: physical
+  source: "AES Ohio tariff exhibit — customer pays actual costs of transmission network upgrades and supplemental transmission projects the company would not have planned absent the request"
+  confidence: high
+  note: |
+    ** THE MOST IMPORTANT NUMBER IN THE RATEPAYER MODULE. **
+    If this holds, the $589.8M of committed Clinton-area transmission work
+    does NOT land on ratepayers, and the Meeks +5.2% IOU estimate becomes an
+    UPPER BOUND rather than a central case — most utilities in that 2010-2024
+    sample had no such tariff.
+    Two caveats before relying on it:
+      1. It covers TRANSMISSION. Distribution-level work on the 69 kV system
+         may still be socialised.
+      2. A minimum-take protects against stranded cost; it does not guarantee
+         zero rate impact.
+    Model BOTH arms: tariff-as-written vs tariff-rejected.
+
+residual_bill_share_under_tariff:
+  value: 0.20
+  low: 0.05
+  high: 0.45
+  unit: fraction
+  method: assumed
+  source: "OUR ASSUMPTION. No published estimate exists for how much of the Meeks IOU rate effect survives a tariff that assigns 100% of transmission network upgrade cost to the customer."
+  confidence: low
+  note: |
+    What this represents: the tariff covers TRANSMISSION. Distribution-level
+    work on the 69 kV system, general system effects, and anything AES would
+    have built anyway are NOT assigned to the customer and still reach
+    ratepayers. The band is deliberately wide because we are guessing.
+    EXPECT THIS TO BE A TOP TORNADO DRIVER. That is correct and useful —
+    it says this is the number worth researching next.
+
+aes_dct_exit_fee_basis:
+  value: 0.75
+  unit: fraction of service term
+  method: physical
+  source: "AES Ohio tariff exhibit — 36 months notice, plus the HIGHER of (a) minimum charge for at least 75% of the service term or (b) actual facility costs x fraction of term remaining"
+  confidence: high
+
+aes_dct_mandatory:
+  value: true
+  method: physical
+  source: "AES Ohio tariff exhibit — service 'is required' for customers meeting the data center definition and size thresholds"
+  confidence: high
+  note: "Mandatory, not elective. AWS cannot opt out into a general service tariff."
+
+household_bill_delta_iou:
+  value: 7.0
+  low: 3.0
+  high: 7.0
+  unit: USD/month
+  method: empirical
+  source: "Meeks et al. 2026, authors' own translation at pre-treatment prices and sales"
+  confidence: high
+
+# === WATER =================================================================
+
+water_l_per_kwh_evaporative:
+  value: 0.36
+  low: 0.32
+  high: 1.10
+  unit: L/kWh
+  method: empirical
+  source: "Microsoft Americas WUE 0.34 (FY25) / 0.38 (FY24); LBNL 2024 site WUE ~0.36; hyperscale median 0.32. Upper bound 1.1 derived from Google's Aug 2025 per-prompt figures — OUR arithmetic, not disclosed by Google."
+  confidence: medium
+
+water_l_per_kwh_closed_loop:
+  value: 0.0
+  low: 0.0
+  high: 0.05
+  unit: L/kWh
+  method: empirical
+  source: "Microsoft next-gen zero-water-for-cooling design (2024-12-09)"
+  confidence: medium
+  note: "Traded against a 10-35% energy penalty. The spread between cooling types is one of the largest single levers in the model."
+
+water_indirect_l_per_kwh:
+  value: 4.52
+  low: 4.00
+  high: 5.00
+  unit: L/kWh
+  method: empirical
+  source: "LBNL 2024 — indirect (power generation) water intensity; US average 4.35"
+  confidence: medium
+  note: |
+    ROUGHLY 12x THE DIRECT FIGURE. The water impact of a data center is
+    overwhelmingly at the generating stations, not at the facility. This
+    lands on the upstream spine and it reframes the whole water narrative.
+    Caveat: includes reservoir evaporation and is contested.
+
+aws_wilmington_claimed_water:
+  value: 6000000
+  unit: gal/year
+  method: assumed
+  source: "Clinton County Port Authority — A PARTY TO THE PROJECT. Claims 97% outside-air cooling."
+  confidence: low
+  note: |
+    THIS IS THE SINGLE BIGGEST UNVERIFIED SENSITIVITY IN THE MODEL.
+    It sits 25-40x BELOW LBNL-derived norms (~1,350-2,280 gal/day/MW).
+    Plausible for a genuinely air-cooled Ohio design, but it is a developer
+    claim, not a finding. Show it WITH its uncertainty band and provenance.
+
+# === EMISSIONS =============================================================
+
+marginal_co2_lb_per_mwh:
+  value: 1757.4
+  unit: lb/MWh
+  method: empirical
+  source: "EPA eGRID2023rev2, RFCW subregion, NON-BASELOAD rate (2025-06-12)"
+  confidence: high
+  note: "The average rate is 911.4. Use non-baseload — new data center load is marginal load. Using the average understates by ~47%. EPA AVERT would be the upgrade if time allows."
+
+ghg_intensity_kg_co2e_per_kwh:
+  value: 0.34
+  unit: kg CO2e/kWh
+  method: empirical
+  source: "LBNL 2024 (US average 0.35)"
+  confidence: high
+
+# === JOBS ==================================================================
+# ** THE MISTAKE EVERYONE MAKES IS HERE. READ capex_construction_share FIRST. **
+
+capex_construction_share:
+  value: 0.196
+  low: 0.18
+  high: 0.22
+  unit: fraction
+  method: empirical
+  source: "Virginia JLARC Report 598 (independent legislative audit, 2024-12) — 19.6% building and site, 68.2% equipment"
+  confidence: high
+  note: |
+    ONLY ~20% OF HEADLINE CAPEX IS CONSTRUCTION.
+    AWS's $4B in Wilmington is roughly $800M of actual construction.
+    Multiplying headline capex by a jobs-per-dollar coefficient inflates
+    the answer ~5x and is the most common error in this literature.
+
+construction_jobs_per_musd_construction:
+  value: 4.75
+  low: 4.45
+  high: 4.75
+  unit: direct FTE per $1M construction output
+  method: empirical
+  source: "Georgia Dept of Audits / UGA Carl Vinson (2025-12), multiplier 1.79. JLARC parallel: 4.45 direct, 7.49 total, multiplier 1.68."
+  confidence: high
+
+construction_jobs_total_per_musd:
+  value: 8.5
+  low: 7.49
+  high: 8.5
+  unit: total FTE per $1M construction output
+  method: empirical
+  source: "as above"
+  confidence: medium
+
+construction_duration_months_per_building:
+  value: 15
+  low: 12
+  high: 18
+  unit: months
+  method: empirical
+  source: "JLARC 598 p.14; AWS New Carlisle IN Phase 1 observed Sept 2024 - Dec 2025"
+  confidence: high
+  note: "5+ years per campus. The binding constraint is TRANSFORMERS AND GRID INTERCONNECTION, not civil works — model delay on the power side."
+
+permanent_jobs_per_mw:
+  value: 0.40
+  low: 0.25
+  high: 0.50
+  unit: FTE per MW
+  method: empirical
+  source: "JLARC 598; AWS New Carlisle bottom-up (6-9 staff/shift per 65MW building); Meta Bowling Green OH (~100 jobs per 200-250MW)"
+  confidence: medium
+  note: |
+    At 500 MW this gives ~200 permanent. The Port Authority claims 100+,
+    which cross-validates at ~0.25/MW (our low bound).
+    DO NOT USE colocation figures (0.87-1.6/MW) — wrong facility type.
+
+operations_multiplier:
+  value: 3.15
+  low: 2.9
+  high: 3.4
+  unit: ratio
+  method: empirical
+  source: "JLARC 598"
+  confidence: medium
+  note: "NOT the industry's 6.6-7.5. See the do-not-use list below."
+
+self_reported_headcount_haircut:
+  value: 0.5
+  unit: multiplier
+  method: empirical
+  source: "JLARC 598 halved operator-reported employment because operators count contractors as jobs"
+  confidence: high
+  note: "Apply to EVERY self-reported headcount, including the Port Authority's."
+
+peak_construction_to_permanent_ratio:
+  value: 8.0
+  low: 4.0
+  high: 16.0
+  unit: ratio
+  method: empirical
+  source: "Derived across Meta's 28 US sites"
+  confidence: medium
+
+population_response_to_jobs:
+  value: 0.05
+  low: 0.0
+  high: 0.15
+  unit: "persons per job"
+  method: empirical
+  source: "DERIVED FROM THE DHL NATURAL EXPERIMENT, Clinton County 2007-2024: job base fell 43-49% while population fell 2.0%."
+  confidence: medium
+  note: |
+    This directly contradicts the standard economic-impact assumption that
+    jobs drive population. In THIS county they demonstrably do not —
+    adjustment runs through labor-force participation and out-commuting.
+    Reinforced by the commute shed: 62.9% of county jobs are already held
+    by in-commuters from 320 counties.
+
+# === LAND ==================================================================
+
+acres_per_mw:
+  value: 0.94
+  low: 0.5
+  high: 1.5
+  unit: acres per MW
+  method: assumed
+  source: "NO PRIMARY SOURCE EXISTS. Consultant consensus 0.5-1.5 ac/MW. Comparables: Stargate Abilene ~1,100 ac / 1.2 GW (~0.9); Meta Hyperion 3,650 ac."
+  confidence: low
+  note: |
+    BETTER OPTION AVAILABLE: derive this from the actual Wilmington parcel.
+    471.609 acres against a 500 MW PJM ramp = 0.943 ac/MW, from county
+    records rather than a vendor blog. Use the local value and cite it.
+
+# === FISCAL ================================================================
+
+ohio_assessment_ratio:
+  value: 0.35
+  unit: fraction
+  method: physical
+  source: "Ohio statutory assessment ratio — assessed value is 35% of market value"
+  confidence: high
+
+school_state_aid_floor:
+  value: 0.10
+  unit: fraction
+  method: physical
+  source: "ORC 3317.017 — state share floored at 10% of base cost once local capacity / base cost > 0.90"
+  confidence: high
+  note: "105 of 611 Ohio districts are ALREADY at this floor. Wilmington is at 18.395%, with only $679.74/pupil of headroom."
+
+# === DO NOT USE ============================================================
+# Kept here deliberately so nobody re-adds them.
+#
+#   PwC / Data Center Coalition multiplier 7.5
+#     — its "603,900 direct jobs" is NAICS 518210, which includes web
+#       hosting and the self-employed, not facility headcount
+#   Ohio Chamber of Commerce: 17,300 permanent Ohio jobs
+#     — business lobby; internally inconsistent ($119k output/worker implies
+#       ~2x too many construction jobs for its own output figure).
+#       Independent estimate (UVA Weldon Cooper / Joyce) is ~4,500. 3.8x gap.
+#   JLL 1.0-1.5 jobs/MW  — wrong facility type
+#   NetChoice, azdatacenter.org  — advocacy
+#   Georgia's pre-correction coefficients
+#     — corrected downward 70% on 2026-01-14. Use gross coefficients for
+#       gross activity; the x0.30 is a "but-for" attribution factor and
+#       applies only when asking what the SUBSIDY caused.
+#   "NLR 2026"  — not a resolvable citation (NLR = the renamed NREL, but a
+#       bare year names no document)
+#
+# USE WITH DISCLOSURE:
+#   Brookings — methodologically sound (identifies off cancelled-project
+#   controls, ~100-200 jobs/county) but discloses Amazon, Google, Meta and
+#   Microsoft as donors. Findings cut against them. Cite the disclosure.
+
+# === FEEDBACK LOOPS ========================================================
+# READ THIS BEFORE USING ANY COEFFICIENT BELOW.
+#
+# These parameterise the three feedback loops. Unlike the physical and
+# econometric coefficients above, NONE of them have a published estimate for
+# a data center in a rural Ohio county. They are our assumptions, with
+# deliberately wide bands.
+#
+# That is not a reason to leave the loops out. A one-directional model
+# silently assumes every one of these is ZERO, which is a stronger and less
+# defensible claim than assuming it is uncertain. Including them with honest
+# bands lets the tornado chart report exactly how much the conclusions depend
+# on mechanism we cannot pin down.
+#
+# EXPECT THESE TO DOMINATE THE TORNADO. That is the correct result.
+
+land_value_premium_pct_per_100mw:
+  value: 0.08
+  low: 0.02
+  high: 0.20
+  unit: fraction
+  method: assumed
+  source: "OUR ASSUMPTION. No published estimate for Ohio. Directionally supported by reporting on land speculation around announced campuses."
+  confidence: low
+
+cash_rent_passthrough:
+  value: 0.30
+  low: 0.10
+  high: 0.60
+  unit: fraction
+  method: assumed
+  source: "OUR ASSUMPTION — share of a land value change that reaches cash rent within the horizon."
+  confidence: low
+  note: "Clinton cash rent is $170/ac against Ohio's $188, so margins are already thin and pass-through may bind harder than average."
+
+farm_exit_rate_per_rent_pct:
+  value: 0.004
+  low: 0.000
+  high: 0.015
+  unit: fraction of farms per 1% rent rise
+  method: assumed
+  source: "OUR ASSUMPTION."
+  confidence: low
+
+backlash_index_per_usd_bill:
+  value: 0.06
+  low: 0.02
+  high: 0.15
+  unit: index per USD/month
+  method: assumed
+  source: "OUR ASSUMPTION, but the MECHANISM is documented: PUCO 25-0958-EL-AIR drew hundreds of ratepayer comments plus formal opposition resolutions from Logan, Greene and Champaign county commissioners and five municipalities."
+  confidence: low
+
+moratorium_threshold:
+  value: 0.55
+  low: 0.35
+  high: 0.80
+  unit: index
+  method: assumed
+  source: "OUR ASSUMPTION — backlash index at which further expansion is blocked."
+  confidence: low
+  note: "Grounded precedent: data centers were on the ballot in 18 Ohio communities in Nov 2026, and Clinton County commissioners denied a 715-acre rezoning 3-0."
+
+sanitary_gal_per_mw_day:
+  value: 120
+  low: 40
+  high: 400
+  unit: gal/MW/day
+  method: assumed
+  source: "OUR ASSUMPTION. Data centers have few occupants; sanitary load is small, but cooling blowdown reaches the sewer where cooling is not fully air-cooled."
+  confidence: low
+  note: "Matters because Wilmington's WWTP runs at 2.97 of 3.0 MGD design — 99% of capacity."
+
+# === NOISE =================================================================
+# Simplified ISO 9613-2 point-source propagation. Full ISO 9613-2 is paywalled
+# and its extra terms (meteorology, barriers, foliage) need site plans we do
+# not have. Inverse-square plus ground attenuation is defensible for a contour.
+
+chiller_sound_power_dba:
+  value: 100
+  low: 95
+  high: 106
+  unit: dBA sound power level
+  method: assumed
+  source: "OUR ASSUMPTION from typical industrial chiller ratings. Runs continuously."
+  confidence: low
+
+generator_sound_power_dba:
+  value: 115
+  low: 108
+  high: 122
+  unit: dBA sound power level
+  method: assumed
+  source: "OUR ASSUMPTION. Real Ohio EPA PTI filings show 115 generators at Lima and up to 158 at Amazon Hilliard, so the COUNT is grounded even where the level is not."
+  confidence: low
+
+ground_attenuation_db:
+  value: 5
+  low: 3
+  high: 8
+  unit: dB
+  method: empirical
+  source: "ISO 9613-2 ground effect over soft ground"
+  confidence: medium
+
+# === UPSTREAM CHAIN ========================================================
+
+marginal_heat_rate_btu_per_kwh:
+  value: 7500
+  low: 6400
+  high: 10500
+  unit: Btu/kWh
+  method: empirical
+  source: "Combined-cycle gas at the efficient end, simple-cycle peakers at the inefficient end. PJM marginal units are predominantly gas."
+  confidence: medium
+
+gas_btu_per_mcf:
+  value: 1037000
+  unit: Btu/Mcf
+  method: physical
+  source: "Standard natural gas heat content"
+  confidence: high
+
+utica_well_lifetime_mcf:
+  value: 4000000
+  low: 2000000
+  high: 8000000
+  unit: Mcf
+  method: empirical
+  source: "Utica horizontal well estimated ultimate recovery, typical range 2-8 Bcf"
+  confidence: low
+  note: "Used for a well-equivalent figure, NOT a claim that specific wells were drilled for this facility."
+
+backlash_decay_per_year:
+  value: 0.30
+  low: 0.15
+  high: 0.50
+  unit: fraction per year
+  method: assumed
+  source: "OUR ASSUMPTION. Political salience decays between election cycles."
+  confidence: low
+  note: |
+    Without decay the backlash index is an unbounded cumulative sum and a
+    moratorium fires in ~92% of draws, which tells you nothing. With decay
+    the index reaches a steady state of (bill * gain / decay), so the loop
+    becomes DISCRIMINATING: it fires when bills rise enough to sustain
+    opposition, not merely because time passed.
+
+construction_wage_usd_per_year:
+  value: 75000
+  low: 60000
+  high: 95000
+  unit: USD/year
+  method: empirical
+  source: "BLS OES Ohio construction trades, loaded for overtime on a large industrial build. PLACEHOLDER RANGE — needs a specific OES series cite before it goes on a slide."
+  confidence: low
+  note: "Previously hardcoded as 85000 in the engine, which violated the rule that numbers live here with a source."
+
+# === ADDED AFTER THE FIRST SWEEP =============================================
+# The first lever sweep picked 100% abatement and evaporative cooling for
+# EVERY town priority. That was not a finding; it was three missing channels
+# and a tie-break artifact. These close them.
+
+school_share_of_property_tax:
+  value: 0.65
+  low: 0.55
+  high: 0.75
+  unit: fraction
+  method: empirical
+  source: "Typical Ohio school district share of total effective property tax millage. NEEDS the Clinton County Auditor's millage breakdown for Wilmington CSD before it goes on a slide."
+  confidence: medium
+  note: |
+    Without this channel the model saw only the state-aid LOSS from
+    un-abated value and none of the local tax GAIN, so it concluded 100%
+    abatement was optimal for schools. That is backwards by roughly $9M/yr.
+
+air_cooled_pue_penalty:
+  value: 0.20
+  low: 0.10
+  high: 0.35
+  unit: fraction
+  method: empirical
+  source: "Microsoft, 2024-12-09 — zero-water cooling traded against higher energy. Already noted on water_l_per_kwh_closed_loop; this is the coefficient that finally applies it."
+  confidence: medium
+  note: "Makes cooling a real trade-off: water against energy and CO2. Before this it changed water only."
+
+bill_reference_mw:
+  value: 500
+  unit: MW
+  method: assumed
+  source: "Meeks et al. estimate a per-FACILITY rate effect for 'a large data center'. We anchor that to a 500 MW reference so the effect scales with absolute size rather than with fraction-of-contract, which was 1.0 at full build for any contract."
+  confidence: low

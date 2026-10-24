@@ -1,0 +1,20 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.DS_Store
+.ipynb_checkpoints/
+
+# Raw downloads stay out of the repo — see PLAN.md on immutable raw data.
+data/raw/
+*.zip
+*.gdb/
+
+# out/results.json IS committed on purpose: it is the Gate 0 contract that
+# Lane B and Lane C build against. Other generated output is not.
+out/*
+!out/validation.json
+!out/results.json
+!out/formula_validation.json
+!out/sweep.json

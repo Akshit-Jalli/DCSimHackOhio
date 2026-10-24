@@ -1,0 +1,480 @@
+{
+  "_meta": {
+    "place_name": "Wilmington, Ohio",
+    "as_of": "2026-10-24",
+    "note": "Every value carries a source. Values marked confidence 'low' are unverified or single-sourced from a party to the project. Do not strip provenance when loading.",
+    "open_items": [
+      "Final Wilmington council vote on Ordinance O-25-73 \u2014 unconfirmed as of 2026-10-24; terms held at first reading",
+      "2026 triennial update percentage for Clinton County \u2014 not yet published",
+      "QCEW by industry (NAICS 23/481/492) \u2014 BLS blocked from cloud IPs, retry from a laptop"
+    ],
+    "resolved_items": [
+      "AES Ohio data center tariff terms \u2014 read from the 2026-09-03 tariff exhibit in PUCO 25-0958-EL-AIR; see coefficients.yaml aes_dct_*. Case still OPEN and CONTESTED."
+    ]
+  },
+  "geography": {
+    "county_fips": "39027",
+    "county_name": "Clinton",
+    "place_geoid": "3985792",
+    "place_fips": "85792",
+    "cousub_note": "Wilmington city is its own MCD. Union township (78302) EXCLUDES the city. The Air Park is inside city limits.",
+    "annexation_warning": "The AWS parcel was annexed 2025-08-07. Census shows Wilmington at 12.942 sq mi in 2020, 2023 AND 2024 \u00e2\u20ac\u201d unchanged. ACS 2020-2024, LODES 2023 and the BPS place file all describe a Wilmington that EXCLUDES the site. Expect ~13.68 sq mi in the next gazetteer.",
+    "source": "Census gazetteer; point-in-polygon on ILN airport reference point"
+  },
+  "demographics": {
+    "population": {
+      "value": 12620,
+      "moe": 55,
+      "unit": "persons",
+      "source": "ACS 2020-2024 5-year",
+      "confidence": "high"
+    },
+    "households": {
+      "value": 5567,
+      "moe": 298,
+      "source": "ACS 2020-2024 5-year",
+      "confidence": "high"
+    },
+    "housing_units": {
+      "value": 5943,
+      "moe": 287,
+      "source": "ACS 2020-2024 5-year",
+      "confidence": "high"
+    },
+    "vacancy_rate": {
+      "value": 0.063,
+      "unit": "fraction",
+      "source": "derived: (5943-5567)/5943",
+      "confidence": "high"
+    },
+    "median_household_income_usd": {
+      "value": 57199,
+      "moe": 6514,
+      "source": "ACS 2020-2024 5-year",
+      "confidence": "high"
+    },
+    "median_gross_rent_usd": {
+      "value": 909,
+      "moe": 76,
+      "source": "ACS 2020-2024 5-year",
+      "confidence": "high"
+    },
+    "county_population": {
+      "value": 42012,
+      "source": "ACS 2020-2024 5-year",
+      "confidence": "high"
+    },
+    "county_median_household_income_usd": {
+      "value": 70407,
+      "moe": 5534,
+      "source": "ACS 2020-2024 5-year",
+      "confidence": "high"
+    },
+    "ba_plus_attainment": {
+      "value": 0.193,
+      "unit": "fraction",
+      "note": "Ohio is 0.324 \u00e2\u20ac\u201d the widest gap in the county profile",
+      "source": "ACS",
+      "confidence": "medium"
+    }
+  },
+  "school_district": {
+    "name": "Wilmington City School District",
+    "irn": "045112",
+    "assessed_valuation_ty24_usd": {
+      "value": 774216420,
+      "source": "DEW FY26 SFPR Final #2, posted 2026-10-09",
+      "confidence": "high"
+    },
+    "assessed_valuation_ty23_usd": {
+      "value": 759890480,
+      "source": "DEW FY26 SFPR",
+      "confidence": "high"
+    },
+    "assessed_valuation_ty22_usd": {
+      "value": 582390120,
+      "source": "DEW FY26 SFPR",
+      "confidence": "high"
+    },
+    "capacity_av_usd": {
+      "value": 705499007,
+      "note": "min(3-year average, TY24). Rule verified at 611/611 Ohio districts.",
+      "source": "DEW FY26 SFPR",
+      "confidence": "high"
+    },
+    "enrolled_adm": {
+      "value": 1983.46,
+      "source": "DEW FY26 SFPR",
+      "confidence": "high"
+    },
+    "base_cost_enrolled_adm": {
+      "value": 2056.34,
+      "source": "DEW FY26 SFPR",
+      "confidence": "high"
+    },
+    "capacity_pct": {
+      "value": 0.02044572,
+      "note": "Statewide observed range is 0.012541-0.025000 across 609 districts",
+      "source": "DEW FY26 SFPR",
+      "confidence": "high"
+    },
+    "local_capacity_per_pupil_usd": {
+      "value": 6607.84,
+      "note": "Independently recomputed from ORC 3317.017 and matched to the penny",
+      "source": "DEW FY26 SFPR + ORC 3317.017",
+      "confidence": "high"
+    },
+    "base_cost_per_pupil_usd": {
+      "value": 8097.31,
+      "source": "DEW FY26 SFPR",
+      "confidence": "high"
+    },
+    "state_share_pct": {
+      "value": 0.18395,
+      "source": "DEW FY26 SFPR",
+      "confidence": "high"
+    },
+    "base_cost_state_funding_usd": {
+      "value": 2954310,
+      "source": "DEW FY26 SFPR",
+      "confidence": "high"
+    },
+    "transitional_aid_guarantee_usd": {
+      "value": 3068240,
+      "note": "May absorb part of any formula drop. Do not assume a clean 1:1 loss.",
+      "source": "DEW FY26 SFPR",
+      "confidence": "high"
+    },
+    "targeted_assistance_usd": {
+      "value": 0,
+      "note": "Formula amount is already zero; the $278,450 shown in the workbook is phase-in only",
+      "source": "DEW FY26 SFPR",
+      "confidence": "high"
+    },
+    "_saturation": {
+      "floor_binds_at_local_capacity_per_pupil_usd": 7287.58,
+      "headroom_per_pupil_usd": 679.74,
+      "market_value_to_exhaust_headroom_usd": 326000000,
+      "max_annual_state_aid_loss_usd": 1348238,
+      "note": "Loss is LINEAR to ~$326M of market value, then FLAT. Identical at $0.5B, $1B, $2B and $4B. Derived: 679.74 * 1983.46 = 1,348,238.",
+      "caveat": "Under the 100% CRA exemption in O-25-73, taxable value may rise ~$0, in which case this channel never fires. Model both arms.",
+      "confidence": "high"
+    }
+  },
+  "control_districts": {
+    "_note": "For within-county difference-in-differences. WARNING: Blanchester spans Clinton/Brown/Clermont/Warren, Clinton-Massie spans Clinton/Warren, East Clinton spans Clinton/Fayette/Highland \u00e2\u20ac\u201d and those counties revalue in different years. Use county x year fixed effects or restrict to Clinton-only parcels.",
+    "blanchester_local": {
+      "irn": "046383",
+      "capacity_av_usd": 250910033,
+      "state_share_pct": 0.4657
+    },
+    "clinton_massie_local": {
+      "irn": "046391",
+      "capacity_av_usd": 420379640,
+      "state_share_pct": 0.26551
+    },
+    "east_clinton_local": {
+      "irn": "046409",
+      "capacity_av_usd": 224918170,
+      "state_share_pct": 0.53478
+    },
+    "greeneview_local": {
+      "irn": "047266",
+      "capacity_av_usd": 305955297,
+      "state_share_pct": 0.36396,
+      "county": "Greene"
+    },
+    "lynchburg_clay_local": {
+      "irn": "047639",
+      "capacity_av_usd": 181177883,
+      "state_share_pct": 0.55566,
+      "county": "Highland"
+    }
+  },
+  "property_tax": {
+    "reappraisal_year": {
+      "value": 2023,
+      "source": "Ohio Dept of Taxation",
+      "confidence": "high"
+    },
+    "triennial_update_year": {
+      "value": 2026,
+      "source": "Ohio Dept of Taxation",
+      "confidence": "high"
+    },
+    "next_reappraisal_year": {
+      "value": 2030,
+      "note": "NOT 2029. ODT realignment in Jan 2026 moved 16 counties back a year, so 2026 values hold FOUR years, TY2026-2029.",
+      "confidence": "high"
+    },
+    "ty2023_reappraisal_change_pct": {
+      "value": 0.361,
+      "note": "Ohio statewide was +0.174. Agricultural rose +0.589.",
+      "confidence": "high"
+    },
+    "county_taxable_base_usd": {
+      "value": 1418800000,
+      "year": 2024,
+      "confidence": "high"
+    },
+    "base_composition": {
+      "residential": 0.62,
+      "agricultural": 0.225,
+      "commercial": 0.133,
+      "industrial": 0.023,
+      "note": "Commercial+industrial is only 15.6%, against 17.8% in Licking and 23.5% in Franklin. Base is 5.2x smaller than Licking's. A single campus is an enormous RELATIVE shock.",
+      "confidence": "high"
+    },
+    "cauv_writedown_pct": {
+      "value": 0.623,
+      "note": "County-wide: $2.355B appraised vs $886.9M taxable across 4,933 CAUV parcels / 231,977 acres",
+      "confidence": "high"
+    }
+  },
+  "site_parcel": {
+    "parcel_id": "285130201000000",
+    "owner": "AMAZON DATA SERVICES INC",
+    "address": "1488 S US 68",
+    "acres": 471.609,
+    "appraised_usd": 6092700,
+    "taxable_usd": 1492190,
+    "has_cauv": true,
+    "current_annual_tax_usd": 17339.93,
+    "annexed_date": "2025-08-07",
+    "school_district": "Wilmington CSD",
+    "note": "This is the verified BEFORE state. Land was a private sale, not Port Authority land, so the port-authority tax exemption path does not apply.",
+    "source": "Clinton County Auditor parcel layer, queried 2026-10-24",
+    "confidence": "high"
+  },
+  "electric": {
+    "utility": "AES Ohio",
+    "ownership": "investor-owned",
+    "note": "NOT municipal, NOT a cooperative, NOT AEP Ohio. The AEP Schedule DCT tariff (case 24-0508-EL-ATA) does NOT apply here.",
+    "pjm_zone": "DAY",
+    "rto": "PJM",
+    "interconnection_substation": "Clinton Substation, East Dalton Rd",
+    "substation_voltage_kv": 345,
+    "local_distribution_kv": 69,
+    "committed_transmission_upgrades_usd": 589800000,
+    "aes_data_center_tariff_case": "PUCO 25-0958-EL-AIR",
+    "aes_tariff_terms": {
+      "value": null,
+      "note": "Settlement includes a data center tariff but TERMS ARE UNVERIFIED. Model as DCT-like (85% / 12yr) and LABEL THE ASSUMPTION.",
+      "confidence": "low"
+    },
+    "egrid_subregion": "RFCW",
+    "egrid_non_baseload_co2_lb_per_mwh": {
+      "value": 1757.4,
+      "note": "Use this, not the 911.4 average. New data center load is marginal load.",
+      "source": "eGRID2023rev2, 2025-06-12",
+      "confidence": "high"
+    },
+    "egrid_average_co2_lb_per_mwh": {
+      "value": 911.4,
+      "source": "eGRID2023rev2",
+      "confidence": "high"
+    }
+  },
+  "water": {
+    "pwsid": "OH1401211",
+    "system_name": "Wilmington City PWS",
+    "population_served": 12401,
+    "connections": 5198,
+    "source_type": "surface",
+    "sources": [
+      "Caesar Creek Lake",
+      "Burtonville reservoirs (2)"
+    ],
+    "groundwater_wells": 0,
+    "wtp_capacity_mgd": {
+      "value": 4.0,
+      "confidence": "high"
+    },
+    "avg_demand_mgd": {
+      "value": 2.5,
+      "low": 2.2,
+      "high": 2.8,
+      "confidence": "medium"
+    },
+    "headroom_mgd": {
+      "value": 1.5,
+      "low": 1.2,
+      "high": 1.8,
+      "confidence": "medium"
+    },
+    "odnr_contract_mgd": {
+      "value": 7.0,
+      "note": "The city pays ODNR for 7 MGD at Caesar Creek whether it uses it or not, and has never sold half. A 30-year stranded sunk cost it is motivated to defray \u00e2\u20ac\u201d a major narrative lever.",
+      "confidence": "high"
+    }
+  },
+  "wastewater": {
+    "wwtp_design_mgd": {
+      "value": 3.0,
+      "confidence": "high"
+    },
+    "mean_monthly_avg_mgd": {
+      "value": 2.97,
+      "note": "99% of design capacity. THIS, not water supply, is the binding municipal constraint.",
+      "source": "EPA ECHO DMRs, Jan 2024 - Sep 2025",
+      "confidence": "high"
+    },
+    "peak_day_mgd": {
+      "value": 10.9,
+      "note": "Against 6.25 rated \u00e2\u20ac\u201d severe infiltration and inflow",
+      "confidence": "high"
+    },
+    "expansion_permit": "PTI #1543170, to 4.5/9.0 MGD, completion unconfirmed"
+  },
+  "agriculture": {
+    "county_farms": {
+      "value": 788,
+      "source": "2022 Census of Agriculture",
+      "confidence": "high"
+    },
+    "county_farmland_acres": {
+      "value": 241315,
+      "source": "2022 Census of Agriculture",
+      "confidence": "high"
+    },
+    "pct_of_county_in_farms": {
+      "value": 0.923,
+      "note": "3rd highest of Ohio's 88 counties",
+      "confidence": "high"
+    },
+    "harvested_cropland_acres": {
+      "value": 208161,
+      "confidence": "high"
+    },
+    "irrigated_acres": {
+      "value": 50,
+      "note": "0.02% of farmland. Irrigation competition is CONCLUSIVELY not a channel.",
+      "confidence": "high"
+    },
+    "cash_rent_usd_per_acre": {
+      "value": 170,
+      "year": 2026,
+      "note": "BELOW Ohio's $188. Ranked 36th of 83 counties. Do not claim top-tier land prices.",
+      "source": "USDA NASS",
+      "confidence": "high"
+    },
+    "farmland_market_value_usd_per_acre": {
+      "value": 13000,
+      "low": 12963,
+      "high": 13137,
+      "note": "Use this, NOT the Census of Agriculture's $8,247",
+      "source": "OSU Extension Western Ohio 2024-25",
+      "confidence": "high"
+    },
+    "corn_yield_bu_per_acre": {
+      "value": 201.8,
+      "note": "11-year average against Ohio's 177.3. RANKED #1 OF 52 OHIO COUNTIES.",
+      "confidence": "high"
+    },
+    "prime_farmland_pct": {
+      "value": 0.762,
+      "note": "Against Ohio's 0.553. Class I-III soils 93.6% against 67.2%.",
+      "source": "SSURGO OH027",
+      "confidence": "high"
+    },
+    "safe_framing": "Highest average corn yields of any Ohio county; 96% of soils prime or locally important. Do NOT claim top-tier land prices."
+  },
+  "labor": {
+    "county_qcew_covered_employment": {
+      "value": 19014,
+      "year": 2024,
+      "source": "Ohio LMI QCEW county trend",
+      "confidence": "high"
+    },
+    "county_unemployment_rate": {
+      "value": 0.043,
+      "year": 2025,
+      "note": "Below Ohio's 3.3% in Sept 2026. This is NOT a distressed labor market.",
+      "confidence": "high"
+    },
+    "county_lodes_wac_jobs": {
+      "value": 19070,
+      "year": 2023,
+      "confidence": "high"
+    },
+    "wilmington_lodes_wac_jobs": {
+      "value": 10602,
+      "note": "56% of all county jobs on 1.9x its resident worker count",
+      "confidence": "high"
+    },
+    "construction_workforce": {
+      "cbp": 352,
+      "lodes_wac": 484,
+      "lodes_rac": 996,
+      "acs_c24030": 1341,
+      "note": "3.8x spread. Clinton is rural: many self-employed trades (ACS sees them, CBP/QCEW do not) and few construction firms payrolled in-county. Prefer QCEW for workplace baseline.",
+      "confidence": "medium"
+    },
+    "commute_shed": {
+      "in_commuter_share": 0.629,
+      "distinct_home_counties": 320,
+      "top_sources": {
+        "Clinton": 0.371,
+        "Highland": 0.122,
+        "Warren": 0.08,
+        "Greene": 0.059,
+        "Fayette": 0.05,
+        "Montgomery": 0.039
+      },
+      "note": "CRITICAL: 62.9% of Clinton jobs are already held by in-commuters across the Cincinnati-Dayton-Columbus triangle. Model labor supply and housing demand on the SHED, not the town. A 6.3% local vacancy rate does NOT imply a housing crunch.",
+      "source": "LODES8 2023 OD main+aux",
+      "confidence": "high"
+    }
+  },
+  "dhl_natural_experiment": {
+    "_note": "Calibrates how this county absorbs a large employment shock. The direction nobody else has data for.",
+    "qcew_peak": {
+      "value": 26712,
+      "year": 2007
+    },
+    "qcew_trough": {
+      "value": 15308,
+      "year": 2013
+    },
+    "qcew_drop_pct": -0.427,
+    "qcew_still_below_peak_pct": -0.288,
+    "cbp_private_drop_pct": -0.489,
+    "transportation_naics48_peak": {
+      "value": 10534,
+      "year": 2007
+    },
+    "transportation_naics48_trough": {
+      "value": 1638,
+      "year": 2012
+    },
+    "transportation_drop_pct": -0.845,
+    "couriers_naics492_peak": {
+      "value": "5000-9999",
+      "years": "2005-2008",
+      "note": "The hub itself. Fell to 173 by 2010, 20-99 by 2011, absent after 2016."
+    },
+    "population_peak": {
+      "value": 42656,
+      "year": 2008
+    },
+    "population_trough": {
+      "value": 41805,
+      "year": 2014
+    },
+    "population_drop_pct": -0.02,
+    "unemployment_peak_pct": {
+      "value": 0.167,
+      "year": 2010,
+      "monthly_peak": 0.197,
+      "monthly_peak_date": "2010-01"
+    },
+    "headline": "The job base fell 43-49% while population fell 2.0%. Adjustment ran through labor-force exit and out-commuting, NOT migration. Expect the same asymmetry on the upside: a job boom will not mechanically add population.",
+    "data_traps": [
+      "LAUS 2015->2016 jumps +21% employed in one year \u00e2\u20ac\u201d a re-benchmarking artifact, not recovery. QCEW over the same span moves only 15,873 -> 16,813.",
+      "Per-capita income ROSE through the collapse because transfer payments masked it. Income is useless as a shock detector.",
+      "CBP changed regimes in 2018: pre-2018 uses empflag suppression (emp=0), 2018+ uses noise infusion. Parsing both the same way SILENTLY ZEROES OUT the DHL hub.",
+      "2008 Transportation-48 is suppressed at [10k-25k], so the true transport peak may be 2008 rather than 2007."
+    ],
+    "confidence": "high"
+  }
+}
