@@ -11,7 +11,6 @@ import type { YearResult } from "./sim/types";
 type Kind = "school" | "college" | "hospital" | "fire" | "police" | "cityhall" | "water";
 const RULES: { kind: Kind; cats: string[]; name?: RegExp; notName?: RegExp }[] = [
   { kind: "school", cats: ["elementary_school", "middle_school", "high_school"], notName: /education service|board of education|district|\bpto\b|\bpta\b|booster/i },
-  { kind: "college", cats: ["college_university"], name: /college|university|campus/i, notName: /program|department|athletic|extension|heritage|\bhall\b|\bdr\.? /i },
   { kind: "hospital", cats: ["hospital"], name: /hospital|medical center|regional/i, notName: /physician|home health|primary care|clinic|associates|practice|animal|veterinar|\bpet\b/i },
   { kind: "fire", cats: ["fire_station"] },
   { kind: "police", cats: ["police_station"] },
@@ -20,6 +19,10 @@ const RULES: { kind: Kind; cats: string[]; name?: RegExp; notName?: RegExp }[] =
   { kind: "water", cats: ["water_utility_provider"], name: /water/i, notName: /billing|fountain/i },
   { kind: "water", cats: [], name: /water (treatment|plant|works|reclamation)|wastewater|water pollution control|sewage treatment/i },
 ];
+// A college place that can name its pin on its own (not a department, program or building)
+const COLLEGE_NAME = /college|university|campus/i;
+const NOT_COLLEGE_NAME = /program|department|athletic|extension|heritage|\bhall\b|\bdr\.? /i;
+
 // Pins of the same kind closer than "merge" meters become one (e.g. 70 Ohio University departments). At most "max" per kind.
 const LIMITS: Record<Kind, { merge: number; max: number }> = {
   school: { merge: 150, max: 12 },
@@ -32,10 +35,54 @@ const LIMITS: Record<Kind, { merge: number; max: number }> = {
 };
 
 type Place = { kind: Kind; name: string; xz: [number, number] };
+type Found = Place & { conf: number };
+
+// "... College" / "... University" names that two or more places start with, most common first, e.g.
+// "Wilmington College Equine Program" + "Wilmington College Athletic Training" -> "Wilmington College"
+function sharedCollegeNames(names: string[]): string[] {
+  const words = (n: string) => n.split(/\s+/).map((w) => w.replace(/[,.]+$/, ""));
+  const counts = new Map<string, number>();
+  for (let i = 0; i < names.length; i++) {
+    for (let j = i + 1; j < names.length; j++) {
+      const a = words(names[i]);
+      const b = words(names[j]);
+      let k = 0;
+      while (k < a.length && k < b.length && a[k].toLowerCase() === b[k].toLowerCase()) k++;
+      while (k > 0 && !/^(college|university|institute)$/i.test(a[k - 1])) k--;
+      if (k < 2) continue; // "College" alone is not a name
+      const p = a.slice(0, k).join(" ");
+      counts.set(p, (counts.get(p) ?? 0) + 1);
+    }
+  }
+  return [...counts.keys()].sort((a, b) => counts.get(b)! - counts.get(a)! || b.length - a.length);
+}
+
+// Campuses are often listed only as their departments. Each shared name gets one pin, placed on the
+// member with the most college places around it (the main campus, not an outlying farm), and it absorbs
+// unnamed departments nearby ("Center for Sport Sciences"). The rest use their own name if it looks like a college.
+function mergeColleges(list: Found[]): Found[] {
+  const { merge } = LIMITS.college;
+  const near = (a: Found, b: Found) => Math.hypot(a.xz[0] - b.xz[0], a.xz[1] - b.xz[1]) < merge;
+  const used = new Set<Found>();
+  const out: Found[] = [];
+  for (const shared of sharedCollegeNames(list.map((c) => c.name))) {
+    const members = list.filter((c) => !used.has(c) && c.name.toLowerCase().includes(shared.toLowerCase()));
+    if (!members.length) continue;
+    const crowd = (c: Found) => list.filter((o) => near(o, c)).length;
+    const pin = members.reduce((best, c) => (crowd(c) > crowd(best) || (crowd(c) === crowd(best) && c.conf > best.conf) ? c : best));
+    for (const c of list) if (members.includes(c) || near(c, pin)) used.add(c);
+    out.push({ ...pin, name: shared, conf: Math.max(...members.map((c) => c.conf)) });
+  }
+  for (const c of list) {
+    if (!used.has(c) && COLLEGE_NAME.test(c.name) && !NOT_COLLEGE_NAME.test(c.name)) out.push(c);
+  }
+  return out;
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- GeoJSON features
 function pickPlaces(features: any[]): Place[] {
-  const found: (Place & { conf: number })[] = [];
+  const found: Found[] = [];
+  const colleges: Found[] = [];
   for (const f of features) {
     const p = f.properties || {};
     const g = f.geometry;
@@ -43,12 +90,17 @@ function pickPlaces(features: any[]): Place[] {
     if (/closed/.test(p.operating_status || "") || (p.confidence ?? 1) < 0.5) continue;
     const name: string = p.name ?? p.names?.primary ?? ""; // public/ fallback file has the raw "names"
     const cat: string = p.basic_category ?? "";
-    const rule = RULES.find((r) => (!r.cats.length || r.cats.includes(cat)) && (!r.name || r.name.test(name)) && !r.notName?.test(name));
-    if (!rule || !name || /cemetery/i.test(name)) continue;
+    if (!name || /cemetery/i.test(name)) continue;
     const xz = scenePos(g.coordinates[0], g.coordinates[1]);
     if (Math.abs(xz[0]) > MAP_HALF || Math.abs(xz[1]) > MAP_HALF) continue;
-    found.push({ kind: rule.kind, name, xz, conf: p.confidence ?? 0 });
+    if (cat === "college_university") {
+      colleges.push({ kind: "college", name, xz, conf: p.confidence ?? 0 });
+      continue;
+    }
+    const rule = RULES.find((r) => (!r.cats.length || r.cats.includes(cat)) && (!r.name || r.name.test(name)) && !r.notName?.test(name));
+    if (rule) found.push({ kind: rule.kind, name, xz, conf: p.confidence ?? 0 });
   }
+  found.push(...mergeColleges(colleges));
   // Most confident first, then skip near-duplicates and extras
   found.sort((a, b) => b.conf - a.conf);
   const kept: Place[] = [];
