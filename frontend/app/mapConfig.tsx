@@ -7,9 +7,12 @@ const M_PER_DEG_LAT = 110540;
 let M_PER_DEG_LON = 111320 * Math.cos((LAT0 * Math.PI) / 180);
 let dataUrl = (layer: string) => `/api/town/wilmington-oh/${layer}`;
 
-// Switch the map to a town (from /api/town/<slug>). Call before rendering the scene.
+// What the app needs to know about the current town (from /api/town/<slug>)
+export type TownInfo = { slug: string; name: string; state: string; countyFips: string | null; lat: number; lon: number };
+
+// Switch the map to a town. Call before rendering the scene.
 // fromPublic: read the old committed Wilmington files in public/ instead of the town cache.
-export function setTown(town: { slug: string; lat: number; lon: number }, fromPublic = false) {
+export function setTown(town: TownInfo, fromPublic = false) {
   dataUrl = fromPublic ? (layer) => `/${layer}.geojson` : (layer) => `/api/town/${town.slug}/${layer}`;
   LAT0 = town.lat;
   LON0 = town.lon;

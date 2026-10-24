@@ -105,6 +105,9 @@ export default function Buildings({
   }, [noiseCenter, noiseRadius, lot, uniforms]);
 
   useEffect(() => {
+    // Big towns have 30k+ buildings. Draw the biggest MAX_DRAWN (the server sorts biggest first),
+    // but every building still counts for the loud zone and "can't build here" tiles.
+    const MAX_DRAWN = 25000;
     fetch(layerUrl("buildings"))
       .then((r) => r.json())
       .then((data) => {
@@ -138,6 +141,7 @@ export default function Buildings({
             centroids.push(cx, -cy); // scene z is south
             const t = tileOf(cx, -cy);
             if (t >= 0) counts[t]++;
+            if (parts.length >= MAX_DRAWN) continue;
             const geo = new THREE.ExtrudeGeometry(new THREE.Shape(ring), {
               depth: height,
               bevelEnabled: false,

@@ -304,10 +304,12 @@ export function ImpactsPanel({
   results,
   year,
   homesInZone,
+  otherTown,
 }: {
   results: YearResult[];
   year: number;
   homesInZone: number;
+  otherTown: boolean; // fake engine only knows Wilmington's water/schools/taxes
 }) {
   const index = Math.max(0, results.findIndex((x) => x.year === year));
   const r = results[index];
@@ -319,7 +321,7 @@ export function ImpactsPanel({
         <div style={{ fontSize: 12, color: "#607d8b" }}>{fmt(r.active_mw)} MW</div>
       </div>
       <div style={{ fontSize: 11, color: "#ef6c00", background: "#fff3e0", borderRadius: 6, padding: "4px 8px", margin: "8px 0 14px" }}>
-        Demo numbers. Engine not connected yet.
+        {otherTown ? "Demo numbers (Wilmington defaults). Engine not connected yet." : "Demo numbers. Engine not connected yet."}
       </div>
 
       {r.active_mw === 0 ? (

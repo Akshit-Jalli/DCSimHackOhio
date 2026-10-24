@@ -187,7 +187,14 @@ export default function Landmarks({
       });
   }, []);
 
-  const places = useMemo(() => PLACES.map((p) => ({ ...p, xz: scenePos(p.lon, p.lat) })), []);
+  // Only pins inside this town's map (the list is Wilmington's)
+  const places = useMemo(
+    () =>
+      PLACES.map((p) => ({ ...p, xz: scenePos(p.lon, p.lat) })).filter(
+        (p) => Math.abs(p.xz[0]) < MAP_HALF && Math.abs(p.xz[1]) < MAP_HALF
+      ),
+    []
+  );
 
   // Nearest substation to the data center = where it would hook into the grid
   const hookup = useMemo(() => {
