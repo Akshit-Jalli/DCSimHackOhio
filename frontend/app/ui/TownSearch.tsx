@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { Town, TownPick } from "@/lib/towns";
+import { areaOffsetText } from "../mapConfig";
 import { panel } from "./Panels";
 
 const row: CSSProperties = { display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", border: "none", background: "transparent", padding: "7px 8px", borderRadius: 8, cursor: "pointer", textAlign: "left", fontSize: 13, color: "#263238" };
@@ -25,7 +26,20 @@ function Choice({ left, right, rightColor, onClick }: { left: string; right: str
 
 // Town name in the header. Click it to search for another US town.
 // Search waits 600 ms after typing stops (Nominatim allows 1 request/second; the server also limits and caches).
-export function TownSearch({ current, onPick }: { current: string; onPick: (t: TownPick) => void }) {
+// "Ready" maps open right away (onOpen); search results go to the area picker (onPick).
+export function TownSearch({
+  current,
+  currentName,
+  onPick,
+  onOpen,
+  onPickArea,
+}: {
+  current: string; // shown in the header, e.g. "Athens, OH · 4.2 km NE"
+  currentName: string; // "Athens"
+  onPick: (t: TownPick) => void;
+  onOpen: (t: Town) => void;
+  onPickArea: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [results, setResults] = useState<TownPick[] | null>(null);
@@ -86,10 +100,15 @@ export function TownSearch({ current, onPick }: { current: string; onPick: (t: T
     onPick(t);
   }
 
+  function openReady(t: Town) {
+    close();
+    onOpen(t);
+  }
+
   const text = q.trim().toLowerCase();
   const ready = cached.filter((t) => !text || `${t.name}, ${t.state}`.toLowerCase().includes(text));
   const isCached = (t: TownPick) => cached.some((c) => c.name === t.name && c.state === t.state);
-  const firstChoice = results?.[0] ?? ready[0];
+  const label = (t: Town) => `${t.name}, ${t.state}` + (areaOffsetText(t) ? ` · ${areaOffsetText(t)}` : "");
 
   return (
     <>
@@ -112,18 +131,29 @@ export function TownSearch({ current, onPick }: { current: string; onPick: (t: T
               onChange={(e) => onType(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Escape") close();
-                if (e.key === "Enter" && firstChoice) pick(firstChoice);
+                if (e.key === "Enter" && results?.[0]) pick(results[0]);
+                else if (e.key === "Enter" && ready[0]) openReady(ready[0]);
               }}
               placeholder="Type a US town, e.g. Athens, OH"
               style={{ width: "100%", boxSizing: "border-box", border: "1px solid #cfd8dc", borderRadius: 8, padding: "8px 10px", fontSize: 14, outline: "none", background: "white", color: "#263238" }}
             />
 
             <div style={{ maxHeight: 320, overflowY: "auto" }}>
+              {!text && (
+                <Choice
+                  left={`📍 Pick another area of ${currentName}`}
+                  right={null}
+                  onClick={() => {
+                    close();
+                    onPickArea();
+                  }}
+                />
+              )}
               {ready.length > 0 && (
                 <>
                   <div style={heading}>Ready (opens instantly)</div>
                   {ready.map((t) => (
-                    <Choice key={t.slug} left={`${t.name}, ${t.state}`} right={t.county} onClick={() => pick(t)} />
+                    <Choice key={t.slug} left={label(t)} right={t.county} onClick={() => openReady(t)} />
                   ))}
                 </>
               )}

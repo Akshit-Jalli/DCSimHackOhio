@@ -15,13 +15,22 @@ dk prefers plain-language explanations, short answers, and direct step-by-step i
 
 ## Setup (once per clone)
 1. `frontend/.env.local` (not committed): `NOMINATIM_CONTACT=<your email>`. Town search needs it (Nominatim usage policy).
-2. `npm run precache` downloads the demo towns (Wilmington, New Albany, Athens, all OH) into `data/towns/` (not committed, ~10-25 MB per town). `npm run precache -- "Dayton, OH"` adds others.
+2. `npm run precache` downloads the demo towns (Wilmington, New Albany, Athens, all OH) into `data/towns/` (not committed, ~10-25 MB per town). `npm run precache -- "Dayton, OH"` adds others; `-- "Athens, OH@39.35,-82.05"` adds an area of a town centered on lat,lon.
 3. Without step 2, Wilmington still loads from the committed `public/*.geojson` fallback.
 
 ## Any town: how it works
 - User clicks the town name in the header (`ui/TownSearch.tsx`). "Ready" lists cached towns (instant). Typing searches Nominatim (US cities/towns/villages only, 600 ms debounce).
 - Picking a new town: `POST /api/town/load` starts the download, `TownApp.tsx` polls `GET /api/town/<slug>` and shows layer-by-layer progress (`ui/LoadingScreen.tsx`). New towns take ~15-30 s.
 - Ready: `setTown()` in `mapConfig.tsx` sets the map center and data URLs, then `<Scene key={slug}>` remounts so nothing from the old town is left over. URL becomes `?town=<slug>`.
+- Region picker (`ui/RegionPicker.tsx`, Leaflet + OSM standard tiles):
+  - Picking a new search result, or "Pick another area of X" in the town menu, opens a flat map with a draggable 14.25 km square (or click the map to move it).
+  - The square can go at most 40 km from the town. Green dashed squares are areas already downloaded (click = open).
+  - Generate sends `center` to `POST /api/town/load`.
+  - "Ready" towns in the menu still open directly (demo towns stay instant).
+  - OSM tile policy: keep the attribution, no pre-fetching or bulk downloads. Fine for the hackathon; a public launch with real traffic should switch to e.g. OpenFreeMap.
+- Areas: an area within 250 m of the town's point is the town's default map (`athens-oh`). Others get their own cache entry with the center rounded to 0.001° in the slug (`athens-oh-39350n82050w`).
+  - In `town.json`, `lat/lon` = map center and `townLat/townLon` = the town's point; the header shows the offset ("Athens, OH · 4.2 km NE").
+  - `countyFips` is looked up at the map center, so an area across a county line sends that county (e.g. NE of Wilmington = 39047 Fayette).
 - Server side (`lib/towns.ts`):
   - Search: Nominatim with a User-Agent from `NOMINATIM_CONTACT`, max 1 request/1.1 s per process, results cached in memory.
   - County FIPS from the FCC Census API (`geo.fcc.gov/api/census/area`).
