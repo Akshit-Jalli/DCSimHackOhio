@@ -51,16 +51,20 @@ dk prefers plain-language explanations, short answers, and direct step-by-step i
   - Same-kind pins close together merge, with a max per kind.
   - Colleges listed only as departments get one pin named after the shared prefix ("Wilmington College", "Ohio University").
 - `labels.tsx`: floating HTML labels positioned each frame by `LabelProjector` (we replaced drei `<Html>` because it logged React 19 unmount errors).
-- `night.ts`: shared day/night value read inside `useFrame`.
-- `sim/types.ts`: engine input/output types (match the team's JSON spec). `sim/presets.ts`: presets and phases. `sim/fakeEngine.ts`: PLACEHOLDER formulas. All numbers shown are demo numbers until the real engine is connected; the UI says so.
-- `ui/Panels.tsx`: build menu, settings panel, impacts panel (animated numbers + sparklines), year slider. `ui/TownSearch.tsx`, `ui/LoadingScreen.tsx`: see above.
+- `night.ts`: shared day/night value read inside `useFrame`. The header button is Auto / Day / Night; in Auto the month drives it (one cycle per simulated year, darkest around July), see `nightFromMonth` in `sim/interp.ts`.
+- `sim/types.ts`: engine input/output types (match the team's JSON spec). `sim/presets.ts`: presets, phases, and the `Settings` the panel edits (size, cooling, water source, tax break %, how long it lasts, who pays for grid upgrades).
+- `sim/engine.ts`: THE REAL ENGINE. A TypeScript port of the Python model (`engine/model.py` at the repo root), same coefficients (`lib/data/coefficients.json`) and baseline (`lib/data/baseline.json`). `Scene.tsx` imports `runSimulation` from here. Runs in a `useMemo` on every settings change; 40 Monte Carlo draws x 16 years is instant, so no "calculating..." state is needed.
+- `sim/engine.parity.mjs`: run `node app/sim/engine.parity.mjs` from `frontend/`. Proves the TS engine reproduces the Python row-for-row (608 fields, 0 error). Run it after touching `engine.ts`.
+- `sim/interp.ts`: the engine steps once a year; the UI scrubs in months. This blends between years for display only.
+- `sim/fakeEngine.ts`: the OLD placeholder. Nothing imports it. Do not reconnect it and do not add a "demo numbers / engine not connected" banner: the engine is connected (since Oct 24).
+- `ui/Panels.tsx`: build menu, settings panel ("2 · Deal terms"), impacts panel ("3 · Impacts", animated numbers + sparklines, interpolated by month), month slider (autoplay ~14 s, pauses at 2041). `ui/Onboarding.tsx`: 5-step first-run walkthrough, generic for any town, reopens from the ? button above the scale bar. `ui/TownSearch.tsx`, `ui/LoadingScreen.tsx`: see above.
 - `lib/towns.ts`, `scripts/precache.ts`: server side, see "Any town".
 
 ## Engine contract
 - Input (`SimInput`): site (fips_county, lat, lon, acres, prior_land_use...), facility (it_load_mw, pue, cooling, water_source, capex, phases...), policy (abatement, PILOT, setback...), horizon 2026-2041. `fips_county` comes from the town (`town.countyFips`, e.g. Wilmington 39027 Clinton, New Albany 39049 Franklin, Athens 39009).
-- Output: one `YearResult` per year. Swap `runSimulation()` in `sim/fakeEngine.ts` for a call to the real engine. Plan: call it on drop / settings change (not on every mouse move) and show "calculating...".
-- Open issue: moving the data center only changes location-based outputs. Ask the engine team which outputs use location (noise, land, school district, distance to substation, water source).
-- Open issue: per-town engine inputs. `fakeEngine` constants (water system capacity, school enrollment, tax rate) are Wilmington guesses, so other towns show "Demo numbers (Wilmington defaults)". dk is asking the data team for per-town inputs.
+- Output: one `YearResult` per year from `sim/engine.ts` (done; see above). `grid_cost_allocation` containing the word "tariff" means the data center pays its own grid upgrades.
+- Which outputs depend on WHERE you drop it: noise (distance to the nearest building, `nearestResidenceM`), acres (lot size), county FIPS. Everything else (bills, schools, water, jobs) depends on the deal terms and size, not the spot. Moving the lot without changing size will only change noise and the loud zone.
+- Open issue: per-town baselines. The engine's baseline (school district finances, water plant capacity, farm count, parcel tax rate) is Wilmington's. Other towns run with it and the impacts panel says "Baseline is Wilmington, Ohio's" until that town has its own `baseline.json`. That is the next piece of engine work, not a frontend task.
 
 ## Data licensing
 Overture/OpenStreetMap data needs attribution ("© OpenStreetMap contributors, Overture Maps"). It is shown in the town search box. Keep it visible if that UI changes.
