@@ -1,14 +1,16 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import type { TownPick } from "@/lib/towns";
-import { setTown, type TownInfo } from "./mapConfig";
+import type { LatLon, Town, TownPick } from "@/lib/towns";
+import { areaOffsetText, setTown, type TownInfo } from "./mapConfig";
 import Scene from "./Scene";
 import Onboarding from "./ui/Onboarding";
 import { LoadingScreen } from "./ui/LoadingScreen";
+import { RegionPicker } from "./ui/RegionPicker";
+import { TownSearch } from "./ui/TownSearch";
 
 const DEFAULT_TOWN = "wilmington-oh";
 // Downtown Wilmington, matching the files committed in public/
-const WILMINGTON_FALLBACK: TownInfo = { slug: "wilmington-oh", name: "Wilmington", state: "OH", countyFips: "39027", lat: 39.43611, lon: -83.81389 };
+const WILMINGTON_FALLBACK: TownInfo = { slug: "wilmington-oh", name: "Wilmington", state: "OH", county: "Clinton County", countyFips: "39027", lat: 39.43611, lon: -83.81389 };
 
 const LAYER_LABELS: Record<string, string> = {
   buildings: "Buildings",
@@ -21,18 +23,20 @@ const LAYER_LABELS: Record<string, string> = {
 
 type Download = { label: string; done: string[]; error: string | null };
 
-// Picks the town (from ?town=<slug>, or the search box), downloads it if needed, then shows the 3D scene.
+// Picks the town (from ?town=<slug>, the search box or the area picker), downloads it if needed, then shows the 3D scene.
 // Switching towns remounts the whole scene (key = slug) so nothing from the old town is left over.
 export default function TownApp() {
   const [town, setTownState] = useState<TownInfo | null>(null);
   const [download, setDownload] = useState<Download | null>(null);
+  const [picking, setPicking] = useState<{ town: TownPick; start?: LatLon } | null>(null);
   const job = useRef(0); // bump to cancel the download we're waiting on
 
   function show(t: TownInfo, fromPublic = false) {
     setTown(t, fromPublic);
     setTownState(t);
     setDownload(null);
-    document.title = `DCSim · ${t.name}, ${t.state}`;
+    const offset = areaOffsetText(t);
+    document.title = `DCSim · ${t.name}, ${t.state}${offset ? ` (${offset})` : ""}`;
     const url = new URL(window.location.href);
     if (t.slug === DEFAULT_TOWN) url.searchParams.delete("town");
     else url.searchParams.set("town", t.slug);
@@ -51,8 +55,8 @@ export default function TownApp() {
     show(WILMINGTON_FALLBACK, true);
   }
 
-  // Wait for a town on the server (start = begin downloading it first), showing progress
-  async function open(label: string, slug: string | null, start?: TownPick) {
+  // Wait for a map on the server (start = begin downloading it first), showing progress
+  async function open(label: string, slug: string | null, start?: TownPick & { center?: LatLon }) {
     const id = ++job.current;
     setDownload({ label, done: [], error: null });
     try {
@@ -76,9 +80,24 @@ export default function TownApp() {
     }
   }
 
-  function pickTown(p: TownPick) {
-    if (town && p.name === town.name && p.state === town.state) return;
-    open(`${p.name}, ${p.state}`, null, p);
+  // A downloaded map: open it (instant)
+  function openReady(t: Town) {
+    setPicking(null);
+    if (t.slug !== town?.slug) open(`${t.name}, ${t.state}`, t.slug);
+  }
+
+  // The area picker for the current town, starting at the area on screen
+  function pickArea() {
+    if (!town) return;
+    const home = { lat: town.townLat ?? town.lat, lon: town.townLon ?? town.lon };
+    setPicking({ town: { name: town.name, state: town.state, county: town.county, ...home }, start: { lat: town.lat, lon: town.lon } });
+  }
+
+  function generate(center: LatLon) {
+    if (!picking) return;
+    const t = picking.town;
+    setPicking(null);
+    open(`${t.name}, ${t.state}`, null, { ...t, center });
   }
 
   function cancel() {
@@ -97,10 +116,28 @@ export default function TownApp() {
   }, []);
 
   const back = town ? `Back to ${town.name}` : "Go to Wilmington";
+  const offset = town ? areaOffsetText(town) : "";
   return (
     <>
-      {town && <Scene key={town.slug} town={town} onPickTown={pickTown} />}
+      {town && (
+        <Scene
+          key={town.slug}
+          town={town}
+          townMenu={
+            <TownSearch
+              current={`${town.name}, ${town.state}${offset ? ` · ${offset}` : ""}`}
+              currentName={town.name}
+              onPick={(t) => setPicking({ town: t })}
+              onOpen={openReady}
+              onPickArea={pickArea}
+            />
+          }
+        />
+      )}
       {town && <Onboarding />}
+      {picking && (
+        <RegionPicker town={picking.town} start={picking.start} onGenerate={generate} onOpen={openReady} onCancel={() => setPicking(null)} />
+      )}
       {download ? (
         <LoadingScreen
           visible

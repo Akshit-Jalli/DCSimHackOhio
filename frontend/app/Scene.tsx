@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { PointerEvent as ReactPointerEvent, RefObject } from "react";
+import type { PointerEvent as ReactPointerEvent, ReactNode, RefObject } from "react";
 import * as THREE from "three";
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { MapControls, GizmoHelper, GizmoViewcube } from "@react-three/drei";
@@ -12,7 +12,6 @@ import Landmarks from "./Landmarks";
 import { LabelLayer, LabelProjector, type Label } from "./labels";
 import { night, lerp } from "./night";
 import { TILE, GRID, MAP_HALF, MAP_SIZE, toLatLon, type TownInfo } from "./mapConfig";
-import type { TownPick } from "@/lib/towns";
 import {
   PRESETS,
   YEAR_END,
@@ -28,7 +27,6 @@ import { simulate } from "./sim/engine";
 import { interpResult, monthLabel, nightFromMonth } from "./sim/interp";
 import { BuildMenu, ImpactsPanel, MONTHS_TOTAL, SettingsPanel, YearBar, panel } from "./ui/Panels";
 import { LoadingScreen } from "./ui/LoadingScreen";
-import { TownSearch } from "./ui/TownSearch";
 
 const MS_PER_MONTH = 75; // autoplay: 192 months in about 14 seconds
 type NightMode = "auto" | "day" | "night";
@@ -281,7 +279,8 @@ function Hud({
   return null;
 }
 
-export default function Scene({ town, onPickTown }: { town: TownInfo; onPickTown: (t: TownPick) => void }) {
+// townMenu: the town name / search dropdown shown in the header (from TownApp)
+export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: ReactNode }) {
   // What's placed
   const [settings, setSettings] = useState<Settings | null>(null);
   const [pos, setPos] = useState<[number, number] | null>(null);
@@ -643,7 +642,7 @@ export default function Scene({ town, onPickTown }: { town: TownInfo; onPickTown
           </div>
           <div>
             <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>DCSim</div>
-            <TownSearch current={`${town.name}, ${town.state}`} onPick={onPickTown} />
+            {townMenu}
           </div>
         </div>
         <button

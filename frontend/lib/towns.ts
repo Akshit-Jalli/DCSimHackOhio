@@ -32,13 +32,30 @@ export type TownPick = {
   lon: number;
 };
 
-// Saved as data/towns/<slug>/town.json once everything is downloaded
+// Saved as data/towns/<slug>/town.json once everything is downloaded.
+// lat/lon = center of the 3D map. townLat/townLon = the town's own point (differs for an off-center area;
+// missing in caches made before areas existed = same as lat/lon).
 export type Town = TownPick & {
   slug: string;
+  townLat?: number;
+  townLon?: number;
   bbox: [number, number, number, number]; // west, south, east, north
-  countyFips: string | null;
+  countyFips: string | null; // county under the map center
   createdAt: string;
 };
+
+export type LatLon = { lat: number; lon: number };
+
+// How far an area's center may be from the town (the picker enforces the same limit)
+export const MAX_AREA_OFFSET_M = 40000;
+// Closer than this to the town's point = the town's default map (plain slug, e.g. the demo towns)
+const SAME_CENTER_M = 250;
+
+export function distanceM(a: LatLon, b: LatLon) {
+  const x = (b.lon - a.lon) * 111320 * Math.cos((((a.lat + b.lat) / 2) * Math.PI) / 180);
+  const y = (b.lat - a.lat) * M_PER_DEG_LAT;
+  return Math.hypot(x, y);
+}
 
 export type TownStatus =
   | { state: "ready"; town: Town }
@@ -284,10 +301,24 @@ export async function townStatus(slug: string): Promise<TownStatus> {
   return town ? { state: "ready", town } : { state: "missing" };
 }
 
-// Start downloading a town (or reuse the cache / a download already running). Returns its slug.
+// Which map to load: the town's default (center = town point, slug "athens-oh") or an area around
+// another center (snapped to 0.001°, ~100 m, so the same spot reuses its cache: "athens-oh-39332n82071w").
+function areaOf(pick: TownPick, center?: LatLon): { slug: string; center: LatLon } {
+  const base = slugify(pick.name, pick.state);
+  if (!center || distanceM(pick, center) < SAME_CENTER_M) return { slug: base, center: { lat: pick.lat, lon: pick.lon } };
+  const lat = Math.round(center.lat * 1000);
+  const lon = Math.round(center.lon * 1000);
+  const tag = `${Math.abs(lat)}${lat < 0 ? "s" : "n"}${Math.abs(lon)}${lon < 0 ? "w" : "e"}`;
+  return { slug: `${base}-${tag}`, center: { lat: lat / 1000, lon: lon / 1000 } };
+}
+
+// Start downloading a town or an area of it (or reuse the cache / a download already running). Returns its slug.
 // town.json is written last, so a folder without it is an unfinished download that will resume.
-export function loadTown(pick: TownPick): { slug: string; promise: Promise<Town> } {
-  const slug = slugify(pick.name, pick.state);
+export function loadTown(pick: TownPick, areaCenter?: LatLon): { slug: string; promise: Promise<Town> } {
+  if (areaCenter && distanceM(pick, areaCenter) > MAX_AREA_OFFSET_M + 1000) {
+    throw new Error(`That area is more than ${MAX_AREA_OFFSET_M / 1000} km from ${pick.name}.`);
+  }
+  const { slug, center } = areaOf(pick, areaCenter);
   const running = jobs.get(slug);
   if (running && !running.error) return { slug, promise: running.promise };
 
@@ -298,8 +329,9 @@ export function loadTown(pick: TownPick): { slug: string; promise: Promise<Town>
 
     const dir = townDir(slug);
     await fs.mkdir(path.join(dir, "raw"), { recursive: true });
-    const bbox = bboxAround(pick.lat, pick.lon);
-    const fipsPromise = countyFips(pick.lat, pick.lon);
+    const bbox = bboxAround(center.lat, center.lon);
+    // County under the map center, so an area that crosses a county line sends the right county to the engine
+    const fipsPromise = countyFips(center.lat, center.lon);
 
     await Promise.all(
       LAYER_NAMES.map(async (layer) => {
@@ -314,8 +346,10 @@ export function loadTown(pick: TownPick): { slug: string; promise: Promise<Town>
       name: pick.name,
       state: pick.state,
       county: pick.county,
-      lat: pick.lat,
-      lon: pick.lon,
+      lat: center.lat,
+      lon: center.lon,
+      townLat: pick.lat,
+      townLon: pick.lon,
       bbox,
       countyFips: await fipsPromise,
       createdAt: new Date().toISOString(),
