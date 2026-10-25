@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { readLesson, readModules } from "../lessonFiles";
+import { lessonFont } from "../fonts";
 import LessonPlayer from "../LessonPlayer";
 import { LoadingScreen } from "../../ui/LoadingScreen";
 
@@ -28,5 +29,9 @@ async function Lesson({ params }: { params: PageProps<"/learn/[moduleId]">["para
   const { moduleId } = await params;
   const lesson = readLesson(moduleId);
   if (!lesson) notFound();
-  return <LessonPlayer lesson={lesson} />;
+  return (
+    <div className={lessonFont.variable}>
+      <LessonPlayer lesson={lesson} />
+    </div>
+  );
 }

@@ -18,33 +18,33 @@
       "target": "school",
       "mood": "wow",
       "text": {
-        "K-2": "Here is a school! Kids learn here, just like you.",
-        "6-8": "Here's the school closest to the town center. Schools get money from local property taxes, which matters later."
+        "K-2": "Here is a **school**! Kids learn here, just like you.",
+        "6-8": "Here's the school closest to the town center. Schools get money from local **property taxes**, which matters later."
       }
     },
     {
       "type": "look",
       "target": "water_tower",
       "text": {
-        "K-2": "This tall thing is a water tower. It holds water for the town.",
-        "3-5": "A water tower stores clean water up high so it can flow to homes.",
-        "9-12": "Water towers store treated water at height, so gravity keeps pressure in the pipes."
+        "K-2": "This tall thing is a **water tower**. It holds water for the town.",
+        "3-5": "A **water tower** stores clean water up high so it can flow to homes.",
+        "9-12": "**Water towers** store treated water at height, so gravity keeps pressure in the pipes."
       }
     },
     {
       "type": "look",
       "target": "substation",
       "text": {
-        "K-2": "This is where electricity comes into town.",
-        "3-5": "This is a power substation. Big power lines bring electricity here for the town.",
-        "9-12": "A substation steps high-voltage transmission power down to distribution voltage for local lines."
+        "K-2": "This is where **electricity** comes into town.",
+        "3-5": "This is a power **substation**. Big power lines bring electricity here for the town.",
+        "9-12": "A **substation** steps high-voltage transmission power down to distribution voltage for local lines."
       }
     },
     {
       "type": "talk",
       "mood": "thinking",
       "fly": "home",
-      "text": "That's the town tour! Next, we'll find out what a data center is."
+      "text": "That's the town tour! Next, we'll find out what a **data center** is."
     }
   ]
 }

@@ -7,10 +7,9 @@ import { setTown, type TownInfo } from "../mapConfig";
 import Scene from "../Scene";
 import { LoadingScreen } from "../ui/LoadingScreen";
 import { BANDS, textFor, type Band, type Lesson, type Step } from "./content";
+import { SpeechBubble } from "./SpeechBubble";
 
-const FONT = "var(--font-geist-sans), system-ui, sans-serif";
-// Bigger text for younger readers
-const TEXT_SIZE: Record<Band, number> = { "K-2": 26, "3-5": 23, "6-8": 21, "9-12": 20 };
+const FONT = "var(--font-lesson), var(--font-geist-sans), system-ui, sans-serif";
 
 // Runs a lesson's steps on top of the 3D scene (always Wilmington).
 // Step (a): talk and look steps. The grade band comes from ?band= until onboarding exists.
@@ -78,10 +77,10 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
             left: "50%",
             bottom: 20,
             transform: "translateX(-50%)",
-            width: "min(760px, calc(100vw - 32px))",
+            maxWidth: "calc(100vw - 32px)",
             zIndex: 20,
             display: "flex",
-            gap: 14,
+            gap: 26, // room for the bubble's tail
             alignItems: "flex-end",
             fontFamily: FONT,
           }}
@@ -91,29 +90,32 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
             {step.mood === "wow" ? "😮" : step.mood === "thinking" ? "🤔" : "😊"}
           </div>
 
-          {/* Speech bubble */}
-          <div style={{ flex: 1, background: "white", borderRadius: 22, padding: "18px 20px 14px", boxShadow: "0 8px 30px rgba(20,40,60,0.25)", color: "#263238" }}>
-            <p style={{ margin: 0, fontSize: TEXT_SIZE[band], lineHeight: 1.4 }}>{textFor(step.text, band)}</p>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
-              <span style={{ fontSize: 14, color: "#78909c", flex: 1 }}>
-                {index + 1} / {lesson.steps.length}
-              </span>
-              {index > 0 && (
-                <button onClick={() => go(index - 1)} style={btn(false)}>
-                  ← Back
-                </button>
-              )}
-              {last ? (
-                <Link href="/learn" style={{ ...btn(true), textDecoration: "none" }}>
-                  Finish ✓
-                </Link>
-              ) : (
-                <button onClick={() => go(index + 1)} style={btn(true)} autoFocus>
-                  Next →
-                </button>
-              )}
-            </div>
-          </div>
+          <SpeechBubble
+            text={textFor(step.text, band)}
+            band={band}
+            stepKey={String(visit)}
+            footer={
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 15, fontWeight: 700, color: "#78909c", flex: 1, minWidth: 48 }}>
+                  {index + 1} / {lesson.steps.length}
+                </span>
+                {index > 0 && (
+                  <button onClick={() => go(index - 1)} style={btn(false)}>
+                    ← Back
+                  </button>
+                )}
+                {last ? (
+                  <Link href="/learn" style={{ ...btn(true), textDecoration: "none" }}>
+                    Finish ✓
+                  </Link>
+                ) : (
+                  <button onClick={() => go(index + 1)} style={btn(true)} autoFocus>
+                    Next →
+                  </button>
+                )}
+              </div>
+            }
+          />
         </div>
       )}
     </>
