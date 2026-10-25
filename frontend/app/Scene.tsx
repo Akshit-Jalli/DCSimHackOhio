@@ -689,10 +689,10 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
       <div style={{ position: "absolute", top: 16, left: 16, display: "flex", gap: 10, alignItems: "stretch", zIndex: 12 }}>
         <div style={{ ...panel, position: "relative", padding: "8px 14px 8px 8px", display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg, #1e88e5, #43a047)", color: "white", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", letterSpacing: 0.5 }}>
-            DC
+            N
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>DCSim</div>
+            <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>Neighbor</div>
             {townMenu}
           </div>
         </div>

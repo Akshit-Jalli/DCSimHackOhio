@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "DCSim",
-  description: "See what a data center would do to a US town",
+  title: "Neighbor",
+  description: "What kind of neighbor is a data center?",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

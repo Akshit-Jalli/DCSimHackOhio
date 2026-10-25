@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import LegalPage from "../_landing/LegalPage";
 import { REPO } from "../_landing/Chrome";
 
-export const metadata: Metadata = { title: "dcsim · Privacy policy" };
+export const metadata: Metadata = { title: "Neighbor · Privacy policy" };
 
 export default function PrivacyPage() {
   return (
     <LegalPage title="Privacy policy" updated="October 24, 2026">
       <section>
         <h2>The short version</h2>
-        <p>dcsim has no accounts, no cookies, no analytics and no ads. We don&apos;t ask for your name or email, and we don&apos;t sell or share personal information.</p>
+        <p>Neighbor has no accounts, no cookies, no analytics and no ads. We don&apos;t ask for your name or email, and we don&apos;t sell or share personal information.</p>
       </section>
       <section>
         <h2>What happens when you use the simulator</h2>
@@ -23,7 +23,7 @@ export default function PrivacyPage() {
       </section>
       <section>
         <h2>Server logs</h2>
-        <p>Like most websites, the service that hosts dcsim may keep standard request logs, such as IP address, browser type and the time of a request, for security and to keep the site running.</p>
+        <p>Like most websites, the service that hosts Neighbor may keep standard request logs, such as IP address, browser type and the time of a request, for security and to keep the site running.</p>
       </section>
       <section>
         <h2>Changes and contact</h2>

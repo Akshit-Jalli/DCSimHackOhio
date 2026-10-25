@@ -3,7 +3,7 @@ import type { Lesson } from "../content";
 import { readGuides, readLesson, readModules } from "../lessonFiles";
 import MyWork from "./MyWork";
 
-export const metadata: Metadata = { title: "DCSim Learn · My work" };
+export const metadata: Metadata = { title: "Neighbor Learn · My work" };
 
 export default function MyWorkPage() {
   const modules = readModules();

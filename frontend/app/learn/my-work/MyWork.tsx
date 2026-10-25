@@ -129,7 +129,7 @@ export default function MyWork({ modules, lessons, guides }: { modules: ModuleIn
             </section>
           );
         })}
-        <p style={{ fontSize: 14, color: MUTED, marginTop: 24 }}>Saved only on this computer. Numbers in DCSim lessons are worked out from the data center&apos;s size or are labeled rough estimates.</p>
+        <p style={{ fontSize: 14, color: MUTED, marginTop: 24 }}>Saved only on this computer. Numbers in Neighbor lessons are worked out from the data center&apos;s size or are labeled rough estimates.</p>
       </main>
     </div>
   );

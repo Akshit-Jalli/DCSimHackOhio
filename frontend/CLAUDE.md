@@ -1,4 +1,6 @@
-# DCSim frontend: 3D data center impact map
+# Neighbor frontend: 3D data center impact map
+
+Product name: **Neighbor**, tagline "What kind of neighbor is a data center?" (formerly DCSim). Folders, routes, the GitHub repo and the localStorage key `dcsim-learn-v1` keep the old name on purpose.
 
 Hackathon project (HackOhio). Users drop a data center onto a 3D model of a real town and see its impacts on water, power bills, schools/taxes, noise, land, and jobs over 2026 to 2041.
 Owner of this folder: dk (3D map / frontend). Teammates own the Python simulation engine and data.

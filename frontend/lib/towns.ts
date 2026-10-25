@@ -96,7 +96,7 @@ export function bboxAround(lat: number, lon: number): Town["bbox"] {
 function userAgent() {
   const contact = process.env.NOMINATIM_CONTACT;
   if (!contact) throw new Error("Set NOMINATIM_CONTACT in frontend/.env.local (your email) to use town search.");
-  return `DCSim-HackOhio/0.1 (${contact})`;
+  return `Neighbor-HackOhio/0.1 (${contact})`;
 }
 
 // Wait so requests are at least 1.1 s apart (shared by every caller in this process)
