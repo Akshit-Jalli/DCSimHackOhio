@@ -38,6 +38,7 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
   const [year, setYear] = useState(lesson.startYear ?? 2031);
   // Property tax break: the first value seen, and whether the student has moved it since
   const [abatement, setAbatement] = useState<{ start: number | null; changed: boolean }>({ start: null, changed: false });
+  const [cooling, setCooling] = useState<{ start: string | null; changed: boolean }>({ start: null, changed: false });
   const [bottomSpace, setBottomSpace] = useState(0); // height of the build menu / year bar
   const [finished, setFinished] = useState(false);
 
@@ -93,7 +94,7 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
       case "do":
         if (step.action === "place") return !!placed;
         if (step.action === "year") return !!placed && year >= step.atLeast;
-        return abatement.changed;
+        return step.action === "cooling" ? cooling.changed : abatement.changed;
       case "reflect":
         return step.kind === "vote" ? !!answers[step.id] : (answers[step.id] ?? "").trim().length >= 3;
       default:
@@ -158,6 +159,7 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
   const control: LessonControl = useMemo(() => {
     const isPlace = step.type === "do" && step.action === "place";
     const isAbatement = step.type === "do" && step.action === "abatement";
+    const isCooling = step.type === "do" && step.action === "cooling";
     const suggest = isPlace && step.suggest && (step.suggest.bands ?? ["K-2", "3-5"]).includes(band) ? step.suggest : null;
     const preset = isPlace ? PRESETS.find((p) => p.id === (step.preset ?? "enterprise")) : undefined;
     let fly: FlyTarget | undefined = step.type === "look" ? step.target : step.type === "talk" || step.type === "do" ? step.fly : undefined;
@@ -170,7 +172,7 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
       presets: isPlace ? [preset?.id ?? "enterprise"] : [],
       showYear: yearShown,
       showImpacts: (lesson.showImpacts ?? ["6-8", "9-12"]).includes(band) || !!highlight,
-      showSettings: isAbatement ? "abatement" : false,
+      showSettings: isAbatement ? "abatement" : isCooling ? "cooling" : false,
       startYear: lesson.startYear,
       highlightMetric: highlight,
       highlightLandmark: (landmark as LessonControl["highlightLandmark"]) ?? null,
@@ -180,6 +182,7 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
         else if (e.type === "placed") setPlaced({ preset: e.preset, mw: e.mw });
         else if (e.type === "removed") setPlaced(null);
         else if (e.type === "year") setYear(e.year);
+        else if (e.type === "cooling") setCooling((c) => (c.start == null ? { start: e.value, changed: false } : { start: c.start, changed: c.changed || e.value !== c.start }));
         else if (e.type === "abatement") setAbatement((a) => (a.start == null ? { start: e.pct, changed: false } : { start: a.start, changed: a.changed || e.pct !== a.start }));
       },
     };
@@ -188,6 +191,12 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
   if (!town || !profile) return <LoadingScreen visible title="Loading" />;
 
   const fact = (step.type === "look" || step.type === "check") && step.fact ? step.fact : null;
+  // The outside numbers behind each fact card
+  const FACT_SOURCES: Record<string, string[]> = {
+    homes: ["homeMWhPerYear"],
+    water: ["evaporationKJPerKg", "litersPerGallon", "bathtubGallons", "homeGallonsPerPersonDay"],
+  };
+  const factSources = (k: string) => (FACT_SOURCES[k] ?? []).map((key) => lesson.facts?.[key]?.source).filter((x): x is string => !!x);
 
   return (
     <>
@@ -217,7 +226,7 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
         </Modal>
       )}
 
-      {mapReady && fact && <FactCard fact={fact} facts={facts} band={band} source={lesson.facts?.homeMWhPerYear?.source} />}
+      {mapReady && fact && <FactCard fact={fact} facts={facts} band={band} sources={factSources(fact)} />}
 
       {mapReady && (
         <div

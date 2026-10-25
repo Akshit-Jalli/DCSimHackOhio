@@ -13,8 +13,16 @@ const MAP_HALF = 7125; // app/mapConfig.tsx
 const GUIDE_DRAWINGS = ["volt", "drip", "bit", "fern"]; // app/learn/Guide.tsx
 const LANDMARKS = ["school", "college", "hospital", "fire", "police", "cityhall", "water", "water_tower", "substation"];
 const FLY_WORDS = ["home", "datacenter", "loudzone", ...LANDMARKS];
-const FACTS = ["mw", "mwh", "homes"];
-const PLACEHOLDERS = ["name", "guide", "mw", "mwh", "homes", "homeMWh", "acres", "fields"];
+const FACTS = ["mw", "mwh", "homes", "water"];
+const PLACEHOLDERS = ["name", "guide", "mw", "mwh", "homes", "homeMWh", "acres", "fields", "kWhPerGallon", "gallonsPerDay", "bathtubs", "people"];
+// Worked-out values and the lesson facts they need
+const NEEDS: Record<string, string[]> = {
+  kWhPerGallon: ["evaporationKJPerKg", "litersPerGallon"],
+  gallonsPerDay: ["evaporationKJPerKg", "litersPerGallon"],
+  bathtubs: ["evaporationKJPerKg", "litersPerGallon", "bathtubGallons"],
+  people: ["evaporationKJPerKg", "litersPerGallon", "homeGallonsPerPersonDay"],
+  "fact:water": ["evaporationKJPerKg", "litersPerGallon"],
+};
 let lessonFactKeys: string[] = []; // the current lesson's "facts" keys also work as placeholders
 const LONG = { "K-2": 130, "3-5": 170, "6-8": 220, "9-12": 240 }; // characters before the bubble gets crowded
 
@@ -89,6 +97,11 @@ function checkLesson(file: string, moduleIds: string[]) {
   if (/\{fields\}/.test(stepsJson) && typeof lesson.facts?.footballFieldAcres?.value !== "number") {
     error(L, `uses {fields}, so "facts.footballFieldAcres" needs a number "value" and a "source"`);
   }
+  for (const [what, keys] of Object.entries(NEEDS)) {
+    const used = what.startsWith("fact:") ? new RegExp(`"fact":\s*"${what.slice(5)}"`).test(stepsJson) : stepsJson.includes(`{${what}}`);
+    const missing = keys.filter((k) => typeof lesson.facts?.[k]?.value !== "number");
+    if (used && missing.length) error(L, `uses ${what.startsWith("fact:") ? `the ${what.slice(5)} fact card` : `{${what}}`}, so "facts" needs number values for: ${missing.join(", ")}`);
+  }
   const usesHomes = stepsJson.match(/\{(homes|homeMWh)\}|"fact":\s*"homes"/);
   if (usesHomes && !(lesson.facts?.homeMWhPerYear?.value && lesson.facts.homeMWhPerYear.source)) {
     error(L, `uses the homes fact, so "facts.homeMWhPerYear" needs a "value" and a "source"`);
@@ -145,10 +158,10 @@ function checkLesson(file: string, moduleIds: string[]) {
           if (typeof s.atLeast !== "number" || s.atLeast < YEAR_START || s.atLeast > YEAR_END) error(W, `"atLeast" must be a year ${YEAR_START}-${YEAR_END}`);
           const placeBefore = lesson.steps.slice(0, i).some((p) => p.type === "do" && p.action === "place");
           if (!placeBefore) error(W, "the year slider only appears after a data center is placed; add a place step before this");
-        } else if (s.action === "abatement") {
+        } else if (s.action === "abatement" || s.action === "cooling") {
           const placeBefore = lesson.steps.slice(0, i).some((p) => p.type === "do" && p.action === "place");
-          if (!placeBefore) error(W, "the tax break slider only appears after a data center is placed; add a place step before this");
-        } else error(W, `"action" must be "place", "year" or "abatement"`);
+          if (!placeBefore) error(W, `the ${s.action === "cooling" ? "cooling choice" : "tax break slider"} only appears after a data center is placed; add a place step before this`);
+        } else error(W, `"action" must be "place", "year", "abatement" or "cooling"`);
         break;
       case "check": {
         const pi = lesson.steps.findIndex((p) => p.type === "predict" && p.id === s.prediction);

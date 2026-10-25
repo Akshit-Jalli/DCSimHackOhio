@@ -140,7 +140,7 @@ export function SettingsPanel({
   settings: Settings;
   onChange: (s: Settings) => void;
   onRemove: () => void;
-  only?: "abatement"; // lessons: show just the property tax break
+  only?: "abatement" | "cooling"; // lessons: show just the property tax break, or just the cooling choice
 }) {
   if (only === "abatement") {
     return (
@@ -169,6 +169,25 @@ export function SettingsPanel({
   const maxMW = Math.round((preset.mw * 1.5) / 10) * 10;
   const field: CSSProperties = { marginBottom: 14 };
   const select: CSSProperties = { width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #cfd8dc", background: "white" };
+
+  if (only === "cooling") {
+    return (
+      <div style={{ ...panel, top: 190, right: 16, width: 280, padding: 18 }}>
+        <div style={{ fontSize: 13, color: "#607d8b" }}>{preset.name} data center</div>
+        <div style={{ fontSize: 17, fontWeight: 800, margin: "4px 0 10px" }}>How it stays cool</div>
+        <select
+          value={settings.cooling}
+          aria-label="Cooling"
+          onChange={(e) => onChange({ ...settings, cooling: e.target.value as Cooling })}
+          style={{ ...select, fontSize: 16, padding: "10px 10px" }}
+        >
+          <option value="closed_loop_air">Closed-loop air (least water)</option>
+          <option value="hybrid">Hybrid</option>
+          <option value="evaporative">Evaporative (most water)</option>
+        </select>
+      </div>
+    );
+  }
 
   return (
     <div style={{ ...panel, top: 190, right: 16, width: 270, padding: 16, maxHeight: "calc(100vh - 300px)", overflowY: "auto" }}>

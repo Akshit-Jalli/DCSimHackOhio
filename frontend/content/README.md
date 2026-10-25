@@ -29,6 +29,7 @@ Bands: `"K-2"`, `"3-5"`, `"6-8"`, `"9-12"`. Any text can be one string for every
 - `{mw}`, `{mwh}` and `{homes}` are worked out from the data center's size (`{homes}` assumes full power all year; say so for 6-8 and 9-12).
 - Every outside number goes in the lesson's `facts` with a `value` and a `source`, and is used in text as `{key}`. Add `"cite": ["key"]` to the step so the source shows under the text.
 - Special facts: `homeMWhPerYear` (needed for `{homes}`) and `footballFieldAcres` (needed for `{fields}`). `{acres}` is the lot size of the preset (1 tile = 20 acres).
+- Water (see module-3): with `evaporationKJPerKg` and `litersPerGallon` you get `{kWhPerGallon}` and `{gallonsPerDay}` (water *evaporated* if all its heat left by evaporating water; real sites can use more), plus `{bathtubs}` with `bathtubGallons` and `{people}` with `homeGallonsPerPersonDay`. The `"fact": "water"` card shows them.
 - Numbers in the impacts panel come from our model, which isn't the real engine yet. Call them **rough estimates** in lesson text. A highlighted panel number also gets a "rough estimate" tag automatically.
 
 ## Lesson file
@@ -63,7 +64,7 @@ The lesson always takes place in Wilmington, Ohio.
 ```
 - `target`: `"home"`, `"datacenter"`, `"loudzone"`, a landmark (`"school"`, `"college"`, `"hospital"`, `"fire"`, `"police"`, `"cityhall"`, `"water"`, `"water_tower"`, `"substation"`; the nearest one is used), or `{ "x": 500, "z": -300 }` in meters (x east, z south of the town center).
 - `highlight`: an impacts panel row (list in `app/metricKeys.ts`, e.g. `"power.homes"`, `"water.daily"`, `"noise.loud_zone"`).
-- `fact`: big number card: `"homes"`, `"mwh"` or `"mw"`.
+- `fact`: big number card: `"homes"`, `"water"`, `"mwh"` or `"mw"`.
 - `lockCamera`: `true` stops the student moving the camera.
 
 **predict**: multiple choice guess. `id` must be unique in the lesson.
@@ -79,8 +80,9 @@ The lesson always takes place in Wilmington, Ohio.
 - `preset`: `"enterprise"` (60 MW), `"hyperscale"` (250 MW) or `"ai"` (1,000 MW).
 - `suggest`: a glowing "Build here!" spot (moved to the nearest buildable lot). Shown to K-2 and 3-5 unless you add `"bands"` inside it.
 - `{ "type": "do", "action": "abatement", "highlight": "money.per_student", ... }`: shows only the property tax break slider; any change counts as done.
+- `{ "type": "do", "action": "cooling", "highlight": "water.daily", ... }`: shows only the cooling choice (air / hybrid / evaporative); any change counts as done.
 - Any do step can `highlight` an impacts panel row.
-- The year and abatement steps need a place step before them.
+- The year, abatement and cooling steps need a place step before them.
 
 **check**: compare a prediction to the answer.
 ```json

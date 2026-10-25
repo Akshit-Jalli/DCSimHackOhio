@@ -728,6 +728,10 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
   useEffect(() => {
     if (abatement != null) onEvent.current?.({ type: "abatement", pct: abatement });
   }, [abatement]);
+  const cooling = settings?.cooling;
+  useEffect(() => {
+    if (cooling) onEvent.current?.({ type: "cooling", value: cooling });
+  }, [cooling]);
 
   // "Build here": the nearest buildable lot to the point the lesson suggests (hidden once placed)
   const suggestAt = lesson?.suggest;
@@ -1088,7 +1092,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
 
       {/* Right: settings — only once confirmed (and hidden under Town data when that's open) */}
       {simulating && settings && preset && !showTown && (lesson?.showSettings ?? true) && (
-        <SettingsPanel preset={preset} settings={settings} onChange={setSettings} onRemove={remove} only={lesson?.showSettings === "abatement" ? "abatement" : undefined} />
+        <SettingsPanel preset={preset} settings={settings} onChange={setSettings} onRemove={remove} only={lesson?.showSettings === "abatement" || lesson?.showSettings === "cooling" ? lesson.showSettings : undefined} />
       )}
 
       {/* Bottom: build menu in build mode; time bar in simulate mode */}
