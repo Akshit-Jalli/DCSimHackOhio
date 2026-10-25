@@ -1,0 +1,303 @@
+{
+  "id": "module-3",
+  "title": "Water",
+  "startYear": 2026,
+  "facts": {
+    "evaporationKJPerKg": {
+      "value": 2440,
+      "source": "NIST Chemistry WebBook, water: enthalpy of vaporization about 44.0 kJ/mol at 25 °C, about 2,440 kJ per kg"
+    },
+    "litersPerGallon": {
+      "value": 3.785,
+      "source": "NIST Handbook 44, Appendix C: 1 U.S. gallon = 3.785 liters (1 liter of water weighs about 1 kg)"
+    },
+    "bathtubGallons": {
+      "value": 70,
+      "source": "U.S. EPA WaterSense: a full bathtub can hold up to 70 gallons of water"
+    },
+    "homeGallonsPerPersonDay": {
+      "value": 82,
+      "source": "U.S. Geological Survey, Estimated Use of Water in the United States in 2015: about 82 gallons per person per day for home use"
+    },
+    "usDcWater2023": {
+      "value": "about 17 billion gallons",
+      "source": "Lawrence Berkeley National Laboratory, 2024 United States Data Center Energy Usage Report (December 2024): water used directly by U.S. data centers in 2023"
+    },
+    "usgsWaterUse": {
+      "value": "withdrawal vs. consumptive use",
+      "source": "U.S. Geological Survey Water Science School: withdrawal is water taken from a source; consumptive use is water evaporated or otherwise not returned"
+    }
+  },
+  "steps": [
+    {
+      "type": "talk",
+      "mood": "happy",
+      "fly": "home",
+      "text": {
+        "K-2": "Hi {name}! Computers get **hot** when they work. Today: how data centers stay cool, and what that means for **water**.",
+        "3-5": "Hi {name}! Computers get **hot** when they work. Today we'll see how data centers stay cool, and what that means for **water**.",
+        "6-8": "Hi {name}. Almost all the electricity a data center uses turns into **heat**. Today: how it gets rid of that heat, and what that means for **water**.",
+        "9-12": "Hi {name}. Nearly every watt a data center uses becomes **heat**. Today: how that heat is removed, and what it means for a town's **water**."
+      }
+    },
+    {
+      "type": "look",
+      "target": "water_tower",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "K-2": "This **water tower** holds clean water for the town. It goes to homes, schools and businesses.",
+        "3-5": "This **water tower** holds clean water up high. From here it flows to homes, schools and businesses."
+      }
+    },
+    {
+      "type": "look",
+      "target": "water_tower",
+      "bands": ["6-8", "9-12"],
+      "cite": ["homeGallonsPerPersonDay"],
+      "text": {
+        "6-8": "Town water is shared by everyone. A person in the U.S. uses about **{homeGallonsPerPersonDay} gallons** of water a day at home.",
+        "9-12": "Municipal water is a shared supply. U.S. home use averaged about **{homeGallonsPerPersonDay} gallons** per person per day (2015)."
+      }
+    },
+    {
+      "type": "predict",
+      "id": "cooling",
+      "mood": "thinking",
+      "text": {
+        "K-2": "How do you think a data center keeps its computers **cool**?",
+        "3-5": "How do you think a data center keeps thousands of hot computers **cool**?",
+        "6-8": "How do you think a data center removes all that **heat**?",
+        "9-12": "How do data centers typically reject their **heat**?"
+      },
+      "choices": [
+        { "id": "a", "text": { "K-2": "Big fans 🌀", "3-5": "Fans blow air over them", "6-8": "Fans move air over the servers", "9-12": "Air cooling" } },
+        { "id": "b", "text": { "K-2": "Water 💧", "3-5": "Water evaporates and carries heat away", "6-8": "Evaporating water carries heat away", "9-12": "Evaporative (water) cooling" } },
+        { "id": "c", "text": { "K-2": "Both! 🌀💧", "3-5": "Both. It depends how it's built.", "6-8": "Both. It depends on the design.", "9-12": "Either, or both, depending on the design" } }
+      ]
+    },
+    {
+      "type": "check",
+      "prediction": "cooling",
+      "answer": "c",
+      "text": {
+        "right": {
+          "K-2": "Yes! Some use **air**, some use **water**, and some use both.",
+          "3-5": "Yes! Some use **air**, some use **water**, and some use both.",
+          "6-8": "Right: designs differ. **Air-cooled** sites use little water; **evaporative** ones use a lot.",
+          "9-12": "Correct: designs differ. **Air-cooled** systems use little water; **evaporative** systems use much more."
+        },
+        "wrong": {
+          "K-2": "Good guess! It's really both. Some use **air**, some use **water**, and some use both.",
+          "3-5": "Good guess! It's really both. Some use **air**, some use **water**, and some use both.",
+          "6-8": "Close: it depends on the design. **Air-cooled** sites use little water; **evaporative** ones use a lot.",
+          "9-12": "It depends on the design. **Air-cooled** systems use little water; **evaporative** systems use much more."
+        }
+      }
+    },
+    {
+      "type": "do",
+      "action": "place",
+      "preset": "enterprise",
+      "suggest": { "x": -1200, "z": 2800 },
+      "fly": { "x": -1200, "z": 3400, "dist": 3400 },
+      "text": {
+        "K-2": "Let's build one! Drag the **Enterprise** card onto the glowing square.",
+        "3-5": "Let's build one! Drag the **Enterprise** card onto the glowing square.",
+        "6-8": "Place the **Enterprise** data center on open land outside town.",
+        "9-12": "Site the **Enterprise** data center on open land outside town."
+      },
+      "doneText": {
+        "K-2": "You built it! 🎉",
+        "3-5": "You built it! It will use {mw} megawatts of power.",
+        "6-8": "Placed. It will draw {mw} MW of power.",
+        "9-12": "Placed. It will draw {mw} MW."
+      }
+    },
+    {
+      "type": "do",
+      "action": "year",
+      "atLeast": 2027,
+      "text": {
+        "K-2": "Drag the **year slider** to 2027 to turn it on!",
+        "3-5": "Drag the **year slider** to 2027 to turn it on.",
+        "6-8": "Move the **year slider** to 2027, when it opens.",
+        "9-12": "Advance the **year slider** to 2027, when it comes online."
+      },
+      "doneText": "It's running! ⚡"
+    },
+    {
+      "type": "predict",
+      "id": "bathtubs",
+      "mood": "thinking",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "K-2": "Some data centers cool off by **evaporating** water, like sweat. How many bathtubs would this one evaporate each day?",
+        "3-5": "Some data centers cool by **evaporating** water, like sweat cools your skin. If this one did, about how many bathtubs would it evaporate each day?"
+      },
+      "choices": [
+        { "id": "a", "text": "About 8 bathtubs 🛁" },
+        { "id": "b", "text": "About 800 bathtubs 🛁" },
+        { "id": "c", "text": "About 8,000 bathtubs 🛁" }
+      ]
+    },
+    {
+      "type": "predict",
+      "id": "gallons",
+      "mood": "thinking",
+      "bands": ["6-8", "9-12"],
+      "cite": ["evaporationKJPerKg", "litersPerGallon"],
+      "text": {
+        "6-8": "Evaporating 1 gallon of water carries away about **{kWhPerGallon} kWh** of heat. About how much water would this one evaporate each day?",
+        "9-12": "Evaporating 1 gallon removes about **{kWhPerGallon} kWh** of heat. If all {mw} MW of heat left this way, about how much water would evaporate per day?"
+      },
+      "choices": [
+        { "id": "a", "text": "About 5,000 gallons" },
+        { "id": "b", "text": "About 50,000 gallons" },
+        { "id": "c", "text": "About 500,000 gallons" }
+      ]
+    },
+    {
+      "type": "check",
+      "prediction": "bathtubs",
+      "answer": "c",
+      "fact": "water",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "right": {
+          "K-2": "Yes! About **{bathtubs} bathtubs** every day. That's what about {people} people use at home!",
+          "3-5": "You got it! It would evaporate about **{bathtubs} bathtubs** a day. That's as much as about {people} people use at home."
+        },
+        "wrong": {
+          "K-2": "Surprise! About **{bathtubs} bathtubs** every day. That's what about {people} people use at home!",
+          "3-5": "Surprise! It would evaporate about **{bathtubs} bathtubs** a day. That's as much as about {people} people use at home."
+        }
+      }
+    },
+    {
+      "type": "check",
+      "prediction": "gallons",
+      "answer": "c",
+      "fact": "water",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "right": {
+          "6-8": "Correct: about **{gallonsPerDay} gallons** a day would evaporate. Real sites often use even more, because some water is flushed out to keep the system clean.",
+          "9-12": "Correct: about **{gallonsPerDay} gallons** a day evaporated. Real sites often use even more, because some water is flushed out to keep the system clean."
+        },
+        "wrong": {
+          "6-8": "You picked {choice}. It's about **{gallonsPerDay} gallons** a day evaporated. Real sites often use even more, because some water is flushed out to keep the system clean.",
+          "9-12": "You picked {choice}. It's about **{gallonsPerDay} gallons** a day evaporated. Real sites often use even more, because some water is flushed out to keep the system clean."
+        }
+      }
+    },
+    {
+      "type": "look",
+      "target": "datacenter",
+      "mood": "happy",
+      "text": {
+        "K-2": "But this one uses **air** to cool down, so it needs much less water.",
+        "3-5": "But this one is set to **air cooling**, so it uses much less water. Not every data center works the same way.",
+        "6-8": "This one is set to **air cooling**, which uses much less water. Not every data center works the same way.",
+        "9-12": "This site is configured for **closed-loop air cooling**, which uses far less water than evaporative cooling."
+      }
+    },
+    {
+      "type": "do",
+      "action": "cooling",
+      "highlight": "water.daily",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "6-8": "Switch its cooling to **Evaporative** and watch the water **rough estimate** in the panel.",
+        "9-12": "Change the cooling design to **Evaporative** and watch the daily water **rough estimate**."
+      },
+      "doneText": {
+        "6-8": "See the water number change? The cooling design makes a big difference.",
+        "9-12": "Same building, very different water use. Cooling design is one of the biggest choices."
+      }
+    },
+    {
+      "type": "look",
+      "target": "water_tower",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "K-2": "Towns share water. Homes, farms and stores all need it too!",
+        "3-5": "Towns share water between homes, farms and businesses. A big new user means the town has to plan ahead."
+      }
+    },
+    {
+      "type": "look",
+      "target": "water_tower",
+      "highlight": "water.share",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "6-8": "The panel's **rough estimate** shows what share of the town's water system it would use. Towns plan for big new users.",
+        "9-12": "The panel's **rough estimate** shows its share of the municipal system. Utilities plan for peak demand, not just averages."
+      }
+    },
+    {
+      "type": "talk",
+      "bands": ["6-8", "9-12"],
+      "cite": ["usDcWater2023"],
+      "text": {
+        "6-8": "Across the U.S., data centers used **{usDcWater2023}** of water directly in 2023.",
+        "9-12": "Nationally, U.S. data centers directly used **{usDcWater2023}** of water in 2023."
+      }
+    },
+    {
+      "type": "talk",
+      "bands": ["9-12"],
+      "cite": ["usgsWaterUse"],
+      "text": "Two terms: **withdrawal** is water taken from a source; **consumption** is water not returned, like water that evaporates."
+    },
+    {
+      "type": "talk",
+      "mood": "thinking",
+      "text": {
+        "K-2": "Using less water can mean using more **electricity** for the fans. Every choice has a trade-off!",
+        "3-5": "Here's the catch: cooling with less water often uses more **electricity**. Towns can ask companies to pick low-water designs.",
+        "6-8": "The trade-off: low-water cooling often uses more **electricity**. Towns can require low-water designs or recycled water as a condition.",
+        "9-12": "The water-energy trade-off: low-water cooling often uses more **electricity**. Towns can require low-water designs or reclaimed water as a permit condition."
+      }
+    },
+    {
+      "type": "reflect",
+      "id": "lessWater",
+      "kind": "vote",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "K-2": "Should towns ask data centers to use less **water**, even if they use more electricity?",
+        "3-5": "Should towns ask data centers to use less **water**, even if that means using more electricity?"
+      },
+      "choices": [
+        { "id": "yes", "text": "Yes 👍" },
+        { "id": "no", "text": "No 👎" },
+        { "id": "unsure", "text": "Not sure 🤔" }
+      ]
+    },
+    {
+      "type": "reflect",
+      "id": "waterRule",
+      "kind": "short",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "6-8": "Would you require **low-water cooling** here? Explain the trade-off in your own words.",
+        "9-12": "Would you require **low-water cooling** as a condition? Use one number and name the trade-off."
+      },
+      "placeholder": {
+        "6-8": "I would / wouldn't require it because…",
+        "9-12": "I would / wouldn't make it a condition because…"
+      }
+    },
+    {
+      "type": "talk",
+      "mood": "wow",
+      "fly": "home",
+      "text": {
+        "K-2": "Great job, {name}! Next time: where does all that **electricity** come from?",
+        "3-5": "Great work, {name}! Next: where does all that **electricity** come from, and who pays for it?",
+        "6-8": "Nice work, {name}. Next: where the **electricity** comes from, and what it means for power bills.",
+        "9-12": "Good work, {name}. Next: grid supply, and who pays for new **power lines**."
+      }
+    }
+  ]
+}

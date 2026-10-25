@@ -506,6 +506,10 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
   useEffect(() => {
     if (abatement != null) onEvent.current?.({ type: "abatement", pct: abatement });
   }, [abatement]);
+  const cooling = settings?.cooling;
+  useEffect(() => {
+    if (cooling) onEvent.current?.({ type: "cooling", value: cooling });
+  }, [cooling]);
   useEffect(() => {
     onEvent.current?.({ type: "results", year, result: placed ? r : null });
   }, [year, r, placed]);
@@ -741,7 +745,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
 
       {/* Right: settings */}
       {placed && settings && preset && (lesson?.showSettings ?? true) && (
-        <SettingsPanel preset={preset} settings={settings} onChange={setSettings} onRemove={remove} only={lesson?.showSettings === "abatement" ? "abatement" : undefined} />
+        <SettingsPanel preset={preset} settings={settings} onChange={setSettings} onRemove={remove} only={lesson?.showSettings === "abatement" || lesson?.showSettings === "cooling" ? lesson.showSettings : undefined} />
       )}
 
       {/* Bottom: year slider and build menu */}

@@ -153,8 +153,8 @@
       "highlight": "money.per_student",
       "bands": ["6-8", "9-12"],
       "text": {
-        "6-8": "**Ms. Rivera** (school board): “Its taxes could help our schools.” The panel shows a **rough estimate** per student. Tax breaks can change it a lot.",
-        "9-12": "**Ms. Rivera** (school board): “This could grow our tax base.” The per-student figure is a **rough estimate**; tax abatements decide what schools actually get."
+        "6-8": "**Ms. Rivera** (school board): “Its taxes could help our schools.” The panel shows a **rough estimate** per student. Bigger tax breaks can mean less for schools.",
+        "9-12": "**Ms. Rivera** (school board): “This could grow our tax base.” The per-student figure is a **rough estimate**; bigger tax breaks can mean less for schools."
       }
     },
     {
@@ -246,14 +246,15 @@
       "type": "do",
       "action": "abatement",
       "highlight": "money.per_student",
+      "fly": "school",
       "bands": ["6-8", "9-12"],
       "text": {
-        "6-8": "Try a tax deal: move the **property tax break** slider. Watch the schools' **rough estimate** change.",
-        "9-12": "Negotiate: adjust the **property tax break**. Watch how the per-student **rough estimate** responds."
+        "6-8": "Try a tax deal: move the **property tax break** slider. Watch which way the schools' **rough estimate** moves.",
+        "9-12": "Negotiate: adjust the **property tax break** and watch which way the per-student **rough estimate** moves."
       },
       "doneText": {
-        "6-8": "See how the deal changes the schools' number? Councils make this choice for real.",
-        "9-12": "Tax breaks attract companies but cut what schools collect. That trade-off is a real council decision."
+        "6-8": "See the pattern? **Bigger tax breaks can mean less money for schools.** Councils make this choice for real.",
+        "9-12": "The pattern: **bigger tax breaks can mean less money for schools**, but they help attract companies. That trade-off is a real council decision."
       }
     },
     {

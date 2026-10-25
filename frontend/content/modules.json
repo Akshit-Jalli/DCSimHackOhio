@@ -55,9 +55,43 @@
     "id": "module-3",
     "icon": "💧",
     "title": "Water",
-    "blurb": "Computers get hot. How do you cool them?",
+    "blurb": {
+      "K-2": "How do data centers stay cool?",
+      "3-5": "Computers get hot. How do you cool them?",
+      "6-8": "Cooling, evaporation and a town's water.",
+      "9-12": "Cooling design and the water-energy trade-off."
+    },
     "teacher": {
-      "goal": "Planned: cooling, water use and a town's water supply."
+      "goal": {
+        "K-2": "Students say why computers need cooling, name two ways to cool them (air and water), and notice that towns share water.",
+        "3-5": "Students explain air vs. water cooling, estimate how much water evaporative cooling could use in bathtubs, and discuss the water-electricity trade-off.",
+        "6-8": "Students use energy per gallon evaporated to estimate daily water evaporated from a data center's size, compare cooling designs, and weigh a water rule.",
+        "9-12": "Students model heat rejection by evaporation, separate withdrawal from consumption, compare cooling designs, and argue for or against a low-water condition."
+      },
+      "minutes": {
+        "K-2": "10–15",
+        "3-5": "15–20",
+        "6-8": "20–30",
+        "9-12": "25–35"
+      },
+      "standards": {
+        "K-2": [
+          "2-PS1-4: Construct an argument with evidence that some changes caused by heating or cooling can be reversed and some cannot.",
+          "K-ESS3-3: Communicate solutions that will reduce the impact of humans on the land, water, air, and/or other living things in the local environment."
+        ],
+        "3-5": [
+          "5-ESS2-2: Describe and graph the amounts of salt water and fresh water in various reservoirs to provide evidence about the distribution of water on Earth.",
+          "5-ESS3-1: Obtain and combine information about ways individual communities use science ideas to protect the Earth's resources and environment."
+        ],
+        "6-8": [
+          "MS-PS1-4: Develop a model that predicts and describes changes in particle motion, temperature, and state of a pure substance when thermal energy is added or removed.",
+          "MS-ESS3-3: Apply scientific principles to design a method for monitoring and minimizing a human impact on the environment."
+        ],
+        "9-12": [
+          "HS-PS3-1: Create a computational model to calculate the change in the energy of one component in a system when the change in energy of the other component(s) and energy flows in and out of the system are known.",
+          "HS-ESS3-4: Evaluate or refine a technological solution that reduces impacts of human activities on natural systems."
+        ]
+      }
     }
   },
   {

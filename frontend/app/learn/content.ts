@@ -26,8 +26,8 @@ export function textFor(t: Text | undefined, band: Band): string {
 export type Mood = "happy" | "thinking" | "wow";
 
 // Numbers worked out from the data center's size (see facts.ts). Text can use them as {mw}, {mwh}, {homes},
-// {acres}, {fields}, plus any fact in the lesson's "facts" by its key.
-export type FactKey = "mw" | "mwh" | "homes";
+// {acres}, {fields}, {gallonsPerDay}, {bathtubs}, {people}, {kWhPerGallon}, plus any fact in the lesson's "facts" by its key.
+export type FactKey = "mw" | "mwh" | "homes" | "water";
 
 // Every step: who sees it (default everyone) and the guide's face
 // cite: keys of the lesson's "facts" this step uses; their sources show under the text
@@ -67,6 +67,7 @@ export type DoStep = Common & {
       }
     | { action: "year"; atLeast: number } // move the year slider to this year or later
     | { action: "abatement" } // move the property tax break slider (any change counts)
+    | { action: "cooling" } // change how it's cooled (any change counts)
   );
 
 // Compare a prediction to the answer
