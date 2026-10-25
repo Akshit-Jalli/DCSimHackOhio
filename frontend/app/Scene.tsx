@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent, ReactNode, RefObject } from "react";
 import * as THREE from "three";
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
@@ -24,13 +24,18 @@ import {
   type Settings,
 } from "./sim/presets";
 import type { SimInput } from "./sim/types";
-import { simulate } from "./sim/engine";
+import { nominalCoefs, simulate } from "./sim/engine";
 import { interpResult, monthLabel, nightFromMonth } from "./sim/interp";
 import { WILMINGTON, defaultProfileFor, profileToBaseline, profileToCoefOverrides, type TownProfile } from "./sim/townProfile";
 import { BuildMenu, ImpactsPanel, MONTHS_TOTAL, SettingsPanel, YearBar, panel } from "./ui/Panels";
 import { ConfirmBar } from "./ui/ConfirmBar";
 import { TownPanel } from "./ui/TownPanel";
 import { Analytics } from "./ui/Analytics";
+import { ResidentCard } from "./ui/ResidentCard";
+import Agents, { RESIDENT_LABEL_ID } from "./Agents";
+import { generatePopulation, type Person } from "./sim/population";
+import { personImpact } from "./sim/personImpact";
+import type { RoadLine } from "./roads";
 import { LoadingScreen } from "./ui/LoadingScreen";
 
 const MS_PER_MONTH = 75; // autoplay: 192 months in about 14 seconds
@@ -319,6 +324,17 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
   // Map data
   const [counts, setCounts] = useState<Int32Array | null>(null);
   const [centroids, setCentroids] = useState<Float32Array | null>(null);
+  const [roads, setRoads] = useState<RoadLine[] | null>(null);
+
+  // Synthetic residents who live in real buildings and walk the real streets, so
+  // the deal can be read one household at a time. Same town, same people.
+  const people = useMemo(() => (centroids ? generatePopulation(town.slug, centroids, counts, 240) : []), [town.slug, centroids, counts]);
+  const [residentId, setResidentId] = useState<number | null>(null);
+  const resident = residentId !== null ? people[residentId] ?? null : null;
+  const walkerPos = useRef<Float32Array | null>(null); // live walker positions, written by <Agents>
+  const onWalkerPositions = useCallback((live: Float32Array) => {
+    walkerPos.current = live;
+  }, []);
   const [landBlocked, setLandBlocked] = useState<Uint8Array | null>(null);
 
   // Time, in months since the start of the horizon. The engine is annual;
@@ -566,6 +582,60 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
   }, [input, runningNow, planned, year]);
   const timeLabel = monthLabel(YEAR_START, month);
 
+  // What this year means for the selected resident (town-level row read through their household)
+  const residentImpact = useMemo(
+    () =>
+      resident
+        ? personImpact(resident, {
+            row: simulating ? rI : null,
+            ledger: simulating ? r : null,
+            baseLedger: results?.[0] ?? null,
+            site: pos && simulating ? { pos, lotSize, mw: runningNow } : null,
+            c: nominalCoefs(),
+            year,
+          })
+        : null,
+    [resident, simulating, rI, r, results, pos, lotSize, runningNow, year]
+  );
+
+  // "Residents" and "Another resident" walk through kinds of stories (got a job,
+  // on the crew, in the loud zone, renting farmland, just the bill) so the rare
+  // ones (a few jobs in a 5,600-person workforce) are findable, not luck.
+  const storyStep = useRef(0);
+  // Open a resident's card and fly the camera down to where they are standing
+  function showResident(id: number) {
+    setResidentId(id);
+    const a = walkerPos.current;
+    if (a && a.length > id * 2 + 1) flyTo(viewOf(a[id * 2], a[id * 2 + 1], 420));
+  }
+  function pickResident(exclude: number | null): number {
+    const kinds = ["permanent", "construction", "noise", "farm", "bill"];
+    const ctx = { row: simulating ? rI : null, ledger: simulating ? r : null, baseLedger: results?.[0] ?? null, site: pos && simulating ? { pos, lotSize, mw: runningNow } : null, c: nominalCoefs(), year };
+    const kindOf = (p: Person) => {
+      const im = personImpact(p, ctx);
+      if (im.job.kind === "permanent") return "permanent";
+      if (im.job.kind === "construction") return "construction";
+      if (im.noise && im.noise.dba >= 55) return "noise";
+      if (im.farm && Math.abs(im.farm.rentDeltaYr) >= 100) return "farm";
+      return "bill";
+    };
+    const byKind = new Map<string, number[]>();
+    people.forEach((p, i) => {
+      if (i === exclude) return;
+      const k = kindOf(p);
+      byKind.set(k, [...(byKind.get(k) ?? []), i]);
+    });
+    for (let step = 0; step < kinds.length; step++) {
+      const k = kinds[(storyStep.current + step) % kinds.length];
+      const ids = byKind.get(k);
+      if (ids && ids.length) {
+        storyStep.current = (storyStep.current + step + 1) % kinds.length;
+        return ids[Math.floor(Math.random() * ids.length)];
+      }
+    }
+    return Math.floor(Math.random() * people.length);
+  }
+
   // ---------- Lesson control ----------
   useEffect(() => {
     if (!loading) onEvent.current?.({ type: "loaded" });
@@ -658,7 +728,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
         </mesh>
 
         {/* Fields, forest, water, roads */}
-        <MapLayers onLoaded={setLandBlocked} onTrees={setTrees} />
+        <MapLayers onLoaded={setLandBlocked} onTrees={setTrees} onRoads={setRoads} />
         {trees && <Trees points={trees} lot={settings && pos ? { center: pos, half: lotSize / 2 } : null} />}
 
         {/* Tile grid only shows while dragging */}
@@ -674,6 +744,9 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
           noiseRadius={noiseRadius}
           lot={settings && pos ? { center: pos, half: lotSize / 2 } : null}
         />
+
+        {/* Residents walking the streets; click one for their profile */}
+        {roads && people.length > 0 && <Agents roads={roads} people={people} selectedId={residentId} onPick={setResidentId} onPositions={onWalkerPositions} />}
 
         {/* Schools, hospital, water towers, power grid, with floating labels */}
         <Landmarks site={site} r={placed ? r : null} onLabels={setLabels} />
@@ -723,7 +796,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
       </Canvas>
 
       {/* Floating labels */}
-      <LabelLayer labels={shownLabels} />
+      <LabelLayer labels={resident ? [...shownLabels, { id: RESIDENT_LABEL_ID, x: 0, y: 0, z: 0, icon: "👤", name: resident.name, badge: null, highlight: true }] : shownLabels} />
 
       {/* Soft darkening at the screen edges */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1, background: isNight ? "radial-gradient(ellipse at center, transparent 45%, rgba(5,10,30,0.45) 100%)" : "radial-gradient(ellipse at center, transparent 55%, rgba(20,40,60,0.22) 100%)", transition: "background 1s" }} />
@@ -770,6 +843,15 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
             style={{ ...panel, position: "relative", padding: "0 14px", border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
           >
             <span style={{ fontSize: 15 }}>✎</span> Edit placement
+          </button>
+        )}
+        {!lesson && people.length > 0 && (
+          <button
+            onClick={() => showResident(pickResident(null))}
+            title="Meet a resident: who lives here and what the deal means for their household"
+            style={{ ...panel, position: "relative", padding: "0 14px", border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <span style={{ fontSize: 15 }}>👤</span> Residents
           </button>
         )}
         <button
@@ -819,6 +901,18 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
           settings={settings}
           onOpenAnalytics={lesson ? undefined : () => setShowAnalytics(true)}
           highlight={lesson?.highlightMetric}
+        />
+      )}
+
+      {/* A resident's profile (left of the impacts panel when that is showing) */}
+      {resident && residentImpact && (
+        <ResidentCard
+          person={resident}
+          impact={residentImpact}
+          year={year}
+          left={simulating && (lesson?.showImpacts ?? true) ? 372 : 16}
+          onClose={() => setResidentId(null)}
+          onAnother={() => showResident(pickResident(residentId))}
         />
       )}
 

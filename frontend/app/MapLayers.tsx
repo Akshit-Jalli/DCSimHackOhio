@@ -5,6 +5,7 @@ import { night } from "./night";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { CLIP, GRID, MAP_HALF, TILE, layerUrl, toXY } from "./mapConfig";
+import type { RoadLine } from "./roads";
 
 // Colors for each type of land
 const LAND_COLORS: Record<string, string> = {
@@ -165,9 +166,11 @@ type Layer = { geo: THREE.BufferGeometry; color: string; y: number; glow?: boole
 export default function MapLayers({
   onLoaded,
   onTrees,
+  onRoads,
 }: {
   onLoaded: (blocked: Uint8Array) => void;
   onTrees: (trees: Float32Array) => void;
+  onRoads?: (roads: RoadLine[]) => void; // walkable streets in scene x,z (for the residents)
 }) {
   const [layers, setLayers] = useState<Layer[]>([]);
 
@@ -244,6 +247,7 @@ export default function MapLayers({
         }
       }
       result.push({ geo: flat(ribbons(roadLines)), color: "#85827c", y: 3.0, glow: true });
+      onRoads?.(roadLines.map(({ pts, w }) => ({ pts: pts.map((p) => [p.x, -p.y] as [number, number]), w })));
       result.push({ geo: flat(ribbons(railLines)), color: "#6d5a4b", y: 3.2 });
 
       setLayers(result);

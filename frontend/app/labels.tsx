@@ -13,6 +13,11 @@ export type Label = { id: string; x: number; y: number; z: number; icon: string;
 
 const registry = new Map<string, { el: HTMLDivElement; pos: THREE.Vector3 }>();
 
+/** Move a label every frame without a React update (used for the selected walking resident). */
+export function setLabelPos(id: string, x: number, y: number, z: number) {
+  registry.get(id)?.pos.set(x, y, z);
+}
+
 const TONE = {
   bad: "#e53935",
   warn: "#fb8c00",

@@ -179,7 +179,7 @@ function constructionFTE(input: EngineInput, year: number, c: Coefs): number {
 }
 
 // Simplified ISO 9613-2: Lw + 10log10(N) - 20log10(r) - 8 - A_ground
-function noiseDba(mw: number, distM: number, c: Coefs): number {
+export function noiseDba(mw: number, distM: number, c: Coefs): number {
   if (mw <= 0) return 0;
   const n = Math.max(1, Math.floor(mw / 10));
   const lw = c.chiller_sound_power_dba + 10 * Math.log10(n);
