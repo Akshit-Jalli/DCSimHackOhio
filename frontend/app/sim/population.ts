@@ -44,8 +44,47 @@ export const OCCUPATIONS: Occupation[] = [
   { id: "disability", label: "On disability", sector: "other", share: 0.03, income: [12000, 20000] },
 ];
 
+export const TRAIT_OPTIONS = [
+  "Lifelong resident",
+  "Moved here for the air park",
+  "Moved here for cheaper housing",
+  "Commutes to Dayton",
+  "On a fixed income",
+  "Rent takes most of the paycheck",
+  "Lives alone",
+  "Caring for a parent",
+  "Runs a side business",
+  "Volunteer firefighter",
+  "Wants the town to grow",
+  "Worries about the water",
+  "Skeptical of tax breaks",
+  "Just here for the jobs",
+] as const;
+
+// What a user fills in to make their own resident. Serializable (saved in localStorage).
+export type CharacterSpec = {
+  name: string;
+  age: number;
+  occupationId: string;
+  income: number;
+  tenure: "rent" | "own";
+  householdSize: number;
+  kidsInSchool: number;
+  farmAcresRented: number;
+  kwhPerMonth: number;
+  worksNights: boolean;
+  traits: string[];
+  color: string;
+  home: [number, number] | null; // scene x, z; null = pick a house for them
+};
+
+export function defaultKwh(householdSize: number, income: number) {
+  return Math.round(Math.min(1800, Math.max(380, 520 + householdSize * 110 + (income / 1000) * 2.2)));
+}
+
 export type Person = {
   id: number;
+  custom?: boolean; // made by the user (not drawn from the distributions)
   name: string;
   age: number;
   occupation: Occupation;
@@ -110,6 +149,56 @@ function traitsFor(p: Omit<Person, "traits">, r: () => number): string[] {
   if (p.householdSize === 1 && p.age > 70) t.push("Lives alone");
   if (o.sector === "student") t.push("At Wilmington College");
   return t.slice(0, 3);
+}
+
+/** A resident from a user's spec. Deterministic ticket from the name, so the same character keeps the same luck. */
+export function makePerson(spec: CharacterSpec, id: number, centroids: Float32Array | null): Person {
+  const r = rng(hash("custom:" + spec.name.toLowerCase()));
+  const occupation = OCCUPATIONS.find((o) => o.id === spec.occupationId) ?? OCCUPATIONS[0];
+  let home: [number, number] | null = spec.home;
+  if (!home) {
+    if (centroids && centroids.length >= 2) {
+      const i = Math.floor(r() * (centroids.length / 2)) * 2;
+      home = [centroids[i], centroids[i + 1]];
+    } else home = [0, 0];
+  }
+  return {
+    id,
+    custom: true,
+    name: spec.name,
+    age: spec.age,
+    occupation,
+    income: spec.income,
+    tenure: spec.tenure,
+    householdSize: spec.householdSize,
+    kidsInSchool: spec.kidsInSchool,
+    farmAcresRented: occupation.id === "farmer_rent" ? spec.farmAcresRented : 0,
+    kwhPerMonth: spec.kwhPerMonth,
+    worksNights: spec.worksNights,
+    traits: spec.traits.slice(0, 3),
+    home,
+    ticket: r(),
+    color: spec.color,
+  };
+}
+
+/** The spec a person was made from (for editing a custom character). */
+export function specOf(p: Person): CharacterSpec {
+  return {
+    name: p.name,
+    age: p.age,
+    occupationId: p.occupation.id,
+    income: p.income,
+    tenure: p.tenure,
+    householdSize: p.householdSize,
+    kidsInSchool: p.kidsInSchool,
+    farmAcresRented: p.farmAcresRented,
+    kwhPerMonth: p.kwhPerMonth,
+    worksNights: p.worksNights,
+    traits: p.traits,
+    color: p.color,
+    home: p.home,
+  };
 }
 
 /**

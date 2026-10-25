@@ -31,7 +31,7 @@ export function ConfirmBar({
     ({ padding: "7px 14px", borderRadius: 8, border: `1px solid ${border}`, background: bg, color: fg, fontWeight: 700, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }) as const;
 
   return (
-    <div style={{ ...panel, top: 16, left: "50%", transform: "translateX(-50%)", padding: "8px 8px 8px 16px", display: "flex", alignItems: "center", gap: 12, zIndex: 13, whiteSpace: "nowrap" }}>
+    <div style={{ ...panel, top: 70, left: "50%", transform: "translateX(-50%)", padding: "8px 8px 8px 16px", display: "flex", alignItems: "center", gap: 12, zIndex: 13, whiteSpace: "nowrap" }}>
       <div>
         <div style={{ fontWeight: 700, fontSize: 14 }}>{valid ? `Place the ${name} here?` : "Can't build here"}</div>
         <div style={{ fontSize: 11, color: "#607d8b" }}>{valid ? "Drag it to move it. Confirm to start the simulation." : "Too close to town or water. Drag it somewhere clear."}</div>

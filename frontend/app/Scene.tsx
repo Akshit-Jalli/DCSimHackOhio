@@ -33,7 +33,8 @@ import { TownPanel } from "./ui/TownPanel";
 import { Analytics } from "./ui/Analytics";
 import { ResidentCard } from "./ui/ResidentCard";
 import Agents, { RESIDENT_LABEL_ID } from "./Agents";
-import { generatePopulation, type Person } from "./sim/population";
+import { generatePopulation, makePerson, type CharacterSpec, type Person } from "./sim/population";
+import { CharacterForm } from "./ui/CharacterForm";
 import { personImpact } from "./sim/personImpact";
 import type { RoadLine } from "./roads";
 import { LoadingScreen } from "./ui/LoadingScreen";
@@ -348,9 +349,50 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
 
   // Synthetic residents who live in real buildings and walk the real streets, so
   // the deal can be read one household at a time. Same town, same people.
-  const people = useMemo(() => (centroids ? generatePopulation(town.slug, centroids, counts, 240) : []), [town.slug, centroids, counts]);
+  const drawn = useMemo(() => (centroids ? generatePopulation(town.slug, centroids, counts, 240) : []), [town.slug, centroids, counts]);
+  // Characters the user made (per town, saved on this computer). They join the walkers.
+  const storeKey = `dcsim.characters.v1.${town.slug}`;
+  const [specs, setSpecs] = useState<CharacterSpec[]>(() => {
+    try {
+      const raw = typeof window !== "undefined" ? localStorage.getItem(storeKey) : null;
+      return raw ? (JSON.parse(raw) as CharacterSpec[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const people = useMemo(() => (drawn.length ? [...drawn, ...specs.map((sp, i) => makePerson(sp, 100000 + i, centroids))] : []), [drawn, specs, centroids]);
   const [residentId, setResidentId] = useState<number | null>(null);
   const resident = residentId !== null ? people[residentId] ?? null : null;
+  // Character form: null = closed; { index: null } = new; { index: k } = editing custom character k
+  const [charForm, setCharForm] = useState<{ index: number | null } | null>(null);
+  const [pickingHome, setPickingHome] = useState(false);
+  const [pickedHome, setPickedHome] = useState<[number, number] | null>(null);
+  function saveSpecs(next: CharacterSpec[]) {
+    setSpecs(next);
+    try {
+      localStorage.setItem(storeKey, JSON.stringify(next));
+    } catch {
+      /* private mode: the character still exists for this visit */
+    }
+  }
+  function saveCharacter(spec: CharacterSpec) {
+    const idx = charForm?.index ?? null;
+    const next = idx === null ? [...specs, spec] : specs.map((s, i) => (i === idx ? spec : s));
+    saveSpecs(next);
+    setCharForm(null);
+    setPickingHome(false);
+    setPickedHome(null);
+    setResidentId(drawn.length + (idx === null ? next.length - 1 : idx));
+    const made = makePerson(spec, 0, centroids);
+    flyTo(viewOf(made.home[0], made.home[1], 420));
+  }
+  function removeCharacter() {
+    const idx = charForm?.index ?? null;
+    if (idx === null) return;
+    saveSpecs(specs.filter((_, i) => i !== idx));
+    setCharForm(null);
+    setResidentId(null);
+  }
   const walkerPos = useRef<Float32Array | null>(null); // live walker positions, written by <Agents>
   const onWalkerPositions = useCallback((live: Float32Array) => {
     walkerPos.current = live;
@@ -513,6 +555,21 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
   function onGroundMove(e: ThreeEvent<PointerEvent>) {
     if (!dragging) return;
     setPos([snap(e.point.x, tiles), snap(e.point.z, tiles)]);
+  }
+  // Picking a home for a character: snap the click to the nearest building
+  function onGroundClick(e: ThreeEvent<MouseEvent>) {
+    if (!pickingHome || !centroids) return;
+    let best: [number, number] = [e.point.x, e.point.z];
+    let bd = Infinity;
+    for (let i = 0; i < centroids.length; i += 2) {
+      const d = Math.hypot(centroids[i] - e.point.x, centroids[i + 1] - e.point.z);
+      if (d < bd) {
+        bd = d;
+        best = [centroids[i], centroids[i + 1]];
+      }
+    }
+    setPickedHome(best);
+    setPickingHome(false);
   }
 
   // Start dragging a new data center from the build menu
@@ -770,7 +827,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
 
         {/* Board and ground */}
         <Board />
-        <mesh rotation={[-Math.PI / 2, 0, 0]} onPointerMove={onGroundMove} receiveShadow>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} onPointerMove={onGroundMove} onClick={onGroundClick} receiveShadow>
           <planeGeometry args={[MAP_SIZE, MAP_SIZE]} />
           <meshLambertMaterial color="#a9d07a" />
         </mesh>
@@ -846,7 +903,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
       </Canvas>
 
       {/* Floating labels */}
-      <LabelLayer labels={resident ? [...shownLabels, { id: RESIDENT_LABEL_ID, x: 0, y: 0, z: 0, icon: "👤", name: resident.name, badge: null, highlight: true }] : shownLabels} />
+      <LabelLayer labels={resident ? [...shownLabels, { id: RESIDENT_LABEL_ID, x: 0, y: 0, z: 0, icon: "👤", name: resident.name, badge: resident.custom ? { text: "You", tone: "info" } : null, highlight: true }] : shownLabels} />
 
       {/* Soft darkening at the screen edges */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1, background: isNight ? "radial-gradient(ellipse at center, transparent 45%, rgba(5,10,30,0.45) 100%)" : "radial-gradient(ellipse at center, transparent 55%, rgba(20,40,60,0.22) 100%)", transition: "background 1s" }} />
@@ -904,6 +961,18 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
             <span style={{ fontSize: 15 }}>👤</span> Residents
           </button>
         )}
+        {!lesson && people.length > 0 && (
+          <button
+            onClick={() => {
+              setPickedHome(null);
+              setCharForm({ index: null });
+            }}
+            title="Create your own resident: job, income, home, traits. See the deal land on you."
+            style={{ ...panel, position: "relative", padding: "0 14px", border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <span style={{ fontSize: 15 }}>＋</span> Create yours
+          </button>
+        )}
         <button
           onClick={() => setNightMode((m) => (m === "auto" ? "day" : m === "day" ? "night" : "auto"))}
           title={nightMode === "auto" ? "Light follows the calendar as time plays. Click to lock to day." : nightMode === "day" ? "Locked to day. Click to lock to night." : "Locked to night. Click to follow the calendar."}
@@ -926,7 +995,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
         </div>
       )}
       {!settings && !loading && !lesson && (
-        <div style={{ ...panel, top: 16, left: "50%", transform: "translateX(-50%)", padding: "10px 16px", fontWeight: 600, pointerEvents: "none" }}>
+        <div style={{ ...panel, top: 70, left: "50%", transform: "translateX(-50%)", padding: "10px 16px", fontWeight: 600, pointerEvents: "none" }}>
           <span style={{ color: "#607d8b", marginRight: 8 }}>1 · Pick a size</span>Drag a data center from the bar below onto the map
         </div>
       )}
@@ -955,7 +1024,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
       )}
 
       {/* A resident's profile (left of the impacts panel when that is showing) */}
-      {resident && residentImpact && (
+      {resident && residentImpact && !charForm && (
         <ResidentCard
           person={resident}
           impact={residentImpact}
@@ -963,7 +1032,33 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
           left={simulating && (lesson?.showImpacts ?? true) ? 372 : 16}
           onClose={() => setResidentId(null)}
           onAnother={() => showResident(pickResident(residentId))}
+          onCreate={() => {
+            setPickedHome(null);
+            setCharForm({ index: null });
+          }}
+          onEdit={resident.custom ? () => { setPickedHome(null); setCharForm({ index: residentId! - drawn.length }); } : undefined}
         />
+      )}
+
+      {/* Make or edit your own character */}
+      {charForm && (
+        <CharacterForm
+          initial={charForm.index !== null ? specs[charForm.index] ?? null : null}
+          picking={pickingHome}
+          pickedHome={pickedHome}
+          onPickHome={() => setPickingHome((v) => !v)}
+          onSave={saveCharacter}
+          onCancel={() => {
+            setCharForm(null);
+            setPickingHome(false);
+          }}
+          onDelete={charForm.index !== null ? removeCharacter : undefined}
+        />
+      )}
+      {pickingHome && (
+        <div style={{ ...panel, top: 70, left: "50%", transform: "translateX(-50%)", padding: "10px 16px", fontWeight: 600, pointerEvents: "none", zIndex: 13 }}>
+          Click a building on the map to set where they live
+        </div>
       )}
 
       {/* Full-screen analytics over everything */}

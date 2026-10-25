@@ -15,6 +15,8 @@ export function ResidentCard({
   left,
   onClose,
   onAnother,
+  onCreate,
+  onEdit,
 }: {
   person: Person;
   impact: PersonImpact;
@@ -22,6 +24,8 @@ export function ResidentCard({
   left: number;
   onClose: () => void;
   onAnother: () => void;
+  onCreate: () => void; // make your own character
+  onEdit?: () => void; // edit this one (custom characters only)
 }) {
   const small: CSSProperties = { fontSize: 11, color: "#607d8b" };
   const fact = (k: string, v: string) => (
@@ -39,7 +43,10 @@ export function ResidentCard({
             {person.name.split(" ").map((w) => w[0]).join("")}
           </div>
           <div>
-            <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.1 }}>{person.name}</div>
+            <div style={{ fontSize: 16, fontWeight: 800, lineHeight: 1.1 }}>
+              {person.name}
+              {person.custom && <span style={{ fontSize: 10, fontWeight: 700, color: "#1e88e5", background: "#e3f2fd", borderRadius: 999, padding: "1px 7px", marginLeft: 7, verticalAlign: "middle" }}>YOU</span>}
+            </div>
             <div style={small}>
               {person.age} · {person.occupation.label}
             </div>
@@ -109,12 +116,20 @@ export function ResidentCard({
         )}
       </div>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+      <div style={{ display: "flex", gap: 6, alignItems: "center", marginTop: 12, flexWrap: "wrap" }}>
         <button type="button" onClick={onAnother} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #cfd8dc", background: "white", color: "#1e88e5", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
           Another resident
         </button>
-        <span style={{ ...small, textAlign: "right", maxWidth: 170, lineHeight: 1.3 }}>Synthetic resident drawn from county distributions. Not a real person.</span>
+        {person.custom && onEdit ? (
+          <button type="button" onClick={onEdit} style={{ padding: "6px 12px", borderRadius: 8, border: "1px solid #cfd8dc", background: "white", color: "#455a64", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+            Edit
+          </button>
+        ) : null}
+        <button type="button" onClick={onCreate} style={{ padding: "6px 12px", borderRadius: 8, border: "none", background: "#2e7d32", color: "white", fontWeight: 700, fontSize: 12, cursor: "pointer" }}>
+          + Create your own
+        </button>
       </div>
+      <div style={{ ...small, marginTop: 8, lineHeight: 1.3 }}>{person.custom ? "Your character. Saved on this computer only." : "Synthetic resident drawn from county distributions. Not a real person."}</div>
     </div>
   );
 }
