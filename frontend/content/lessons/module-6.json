@@ -1,0 +1,332 @@
+{
+  "id": "module-6",
+  "title": "You decide",
+  "startYear": 2026,
+  "facts": {
+    "homeMWhPerYear": {
+      "value": 10.791,
+      "source": "U.S. Energy Information Administration: the average U.S. home used 10,791 kWh of electricity in 2022 (eia.gov/tools/faqs/faq.php?id=97)"
+    },
+    "footballFieldAcres": {
+      "value": 1.322,
+      "source": "NFL Rulebook, Rule 1: a field with end zones is 360 × 160 feet = 57,600 square feet; 1 acre = 43,560 square feet"
+    },
+    "dcShare2023": {
+      "value": "4.4%",
+      "source": "Lawrence Berkeley National Laboratory, 2024 United States Data Center Energy Usage Report (December 2024): share of total U.S. electricity used by data centers in 2023"
+    },
+    "dcShare2028": {
+      "value": "6.7% to 12%",
+      "source": "Lawrence Berkeley National Laboratory, 2024 United States Data Center Energy Usage Report (December 2024): projected range for 2028"
+    },
+    "conversationDba": {
+      "value": "60 to 70",
+      "source": "CDC, What Noises Cause Hearing Loss? (normal conversation, in A-weighted decibels)"
+    }
+  },
+  "steps": [
+    {
+      "type": "talk",
+      "mood": "wow",
+      "fly": "home",
+      "text": {
+        "K-2": "Welcome to the **town council**, {name}! A company wants to build a giant data center here. You get to help decide!",
+        "3-5": "Welcome to the Wilmington **town council**, {name}! A company wants to build a giant data center. Tonight, you decide.",
+        "6-8": "You're on the Wilmington **town council**, {name}. A company has asked to build a huge data center. Tonight you vote.",
+        "9-12": "You sit on Wilmington's **town council**, {name}. A developer has applied to build a hyperscale data center. Tonight: approve, reject, or approve with conditions."
+      }
+    },
+    {
+      "type": "talk",
+      "mood": "thinking",
+      "text": {
+        "K-2": "First we'll look at it. Then some neighbors will talk. Then you **vote**!",
+        "3-5": "First, see how big it is. Then hear from five neighbors. Then **vote**.",
+        "6-8": "First size it up, then hear from five neighbors, then **vote**. There's no single right answer.",
+        "9-12": "Size it up, hear public comment, then **vote**. Reasonable people can weigh the same evidence differently."
+      }
+    },
+    {
+      "type": "do",
+      "action": "place",
+      "preset": "hyperscale",
+      "suggest": { "x": -1200, "z": 2800 },
+      "fly": { "x": -1200, "z": 3400, "dist": 3400 },
+      "cite": ["footballFieldAcres"],
+      "text": {
+        "K-2": "Drag the **Hyperscale** card onto the glowing square to see how big it is.",
+        "3-5": "Drag the **Hyperscale** card onto the glowing square to see how big it is.",
+        "6-8": "Place the proposed **Hyperscale** data center on open land outside town.",
+        "9-12": "Site the proposed **Hyperscale** campus on open land outside town."
+      },
+      "doneText": {
+        "K-2": "Wow, it's huge! As big as about **{fields} football fields**!",
+        "3-5": "It covers {acres} acres. That's about **{fields} football fields**!",
+        "6-8": "The site is {acres} acres, about **{fields} football fields**.",
+        "9-12": "The site is {acres} acres, about **{fields} football fields**."
+      }
+    },
+    {
+      "type": "predict",
+      "id": "homes250",
+      "mood": "thinking",
+      "text": {
+        "K-2": "It needs lots of **electricity**. How many homes use that much?",
+        "3-5": "It will use **{mw} megawatts** of power. How many homes use that much electricity?",
+        "6-8": "At full power it draws **{mw} MW**. If it ran like that all year, how many homes' worth of electricity is that?",
+        "9-12": "At **{mw} MW**, running at full power all year, it would use {mwh} MWh. About how many homes use that much?"
+      },
+      "choices": [
+        { "id": "a", "text": { "K-2": "A street of houses 🏘️", "3-5": "About 2,000 homes", "6-8": "About 2,000 homes", "9-12": "About 2,000 homes" } },
+        { "id": "b", "text": { "K-2": "A small town of houses 🏡", "3-5": "About 20,000 homes", "6-8": "About 20,000 homes", "9-12": "About 20,000 homes" } },
+        { "id": "c", "text": { "K-2": "A huge city of houses 🏙️", "3-5": "About 200,000 homes", "6-8": "About 200,000 homes", "9-12": "About 200,000 homes" } }
+      ]
+    },
+    {
+      "type": "do",
+      "action": "year",
+      "atLeast": 2031,
+      "text": {
+        "K-2": "It's built in three parts. Drag the **year slider** to 2031 to finish all of it!",
+        "3-5": "It's built in three parts. Drag the **year slider** to 2031, when all of it is running.",
+        "6-8": "It opens in three phases. Move the **year slider** to 2031, when all {mw} MW is running.",
+        "9-12": "It comes online in three phases (2027, 2029, 2031). Advance the **year slider** to 2031 for full build-out."
+      },
+      "doneText": {
+        "K-2": "All of it is on! ⚡",
+        "3-5": "All of it is running! ⚡",
+        "6-8": "Fully built and running. ⚡",
+        "9-12": "Fully built out. ⚡"
+      }
+    },
+    {
+      "type": "check",
+      "prediction": "homes250",
+      "answer": "c",
+      "fact": "homes",
+      "text": {
+        "right": {
+          "K-2": "You got it! It uses as much electricity as about **{homes} homes**. That's a huge city!",
+          "3-5": "You got it! It uses as much electricity as about **{homes} homes**.",
+          "6-8": "Correct: if it runs at full power all year, that's about **{homes} homes'** worth of electricity.",
+          "9-12": "Correct: at full power all year, {mwh} MWh is about **{homes} homes'** worth of electricity."
+        },
+        "wrong": {
+          "K-2": "Surprise! It uses as much electricity as about **{homes} homes**. That's a huge city!",
+          "3-5": "Surprise! It uses as much electricity as about **{homes} homes**.",
+          "6-8": "You picked {choice}. If it runs at full power all year, it's really about **{homes} homes'** worth.",
+          "9-12": "You picked {choice}. At full power all year, {mwh} MWh is about **{homes} homes'** worth."
+        }
+      }
+    },
+    {
+      "type": "talk",
+      "bands": ["6-8", "9-12"],
+      "cite": ["dcShare2023", "dcShare2028"],
+      "text": {
+        "6-8": "It's not just Wilmington. In 2023, data centers used about **{dcShare2023}** of all U.S. electricity. Experts expect **{dcShare2028}** by 2028.",
+        "9-12": "Nationally, data centers used about **{dcShare2023}** of U.S. electricity in 2023, projected to reach **{dcShare2028}** by 2028."
+      }
+    },
+    {
+      "type": "talk",
+      "mood": "happy",
+      "text": {
+        "K-2": "Now five **pretend neighbors** will talk. Listen to each one!",
+        "3-5": "Now five **pretend neighbors** will speak. Some like the idea and some don't. Listen to each one.",
+        "6-8": "Public comment: five **pretend residents** will speak. Some support it, some oppose it, one is unsure.",
+        "9-12": "Public comment: five **pretend residents**, some for, some against, one undecided. Note what evidence each one points to."
+      }
+    },
+    {
+      "type": "look",
+      "target": "school",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "K-2": "**Ms. Rivera** works for the schools. She says: “The company will pay taxes. That money could help our school!”",
+        "3-5": "**Ms. Rivera**, from the school board, says: “The company will pay taxes. That money could pay for teachers and books.”"
+      }
+    },
+    {
+      "type": "look",
+      "target": "school",
+      "highlight": "money.per_student",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "6-8": "**Ms. Rivera** (school board): “Its taxes could help our schools.” The panel shows a **rough estimate** per student. Tax breaks can change it a lot.",
+        "9-12": "**Ms. Rivera** (school board): “This could grow our tax base.” The per-student figure is a **rough estimate**; tax abatements decide what schools actually get."
+      }
+    },
+    {
+      "type": "talk",
+      "fly": "loudzone",
+      "mood": "thinking",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "K-2": "**Mr. Okafor** lives nearby. He says: “The big fans could be loud. I want my home to stay quiet.”",
+        "3-5": "**Mr. Okafor** lives near the site. He says: “The cooling fans could be loud at night. I want my home to stay quiet.” The red circle shows where it might be loud."
+      }
+    },
+    {
+      "type": "look",
+      "target": "loudzone",
+      "highlight": "noise.nearest_home",
+      "mood": "thinking",
+      "bands": ["6-8", "9-12"],
+      "cite": ["conversationDba"],
+      "text": {
+        "6-8": "**Mr. Okafor** (lives nearby): “I'm worried about noise.” A normal conversation is about **{conversationDba} decibels**. Compare the panel's rough estimate.",
+        "9-12": "**Mr. Okafor** (neighbor): “What about noise at night?” Normal conversation is about **{conversationDba} dBA**. The panel's figure at the nearest home is a rough estimate."
+      }
+    },
+    {
+      "type": "look",
+      "target": "datacenter",
+      "mood": "thinking",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "K-2": "**Mrs. Lindqvist** is a farmer. She says: “This was good land for crops. Once it's built on, it's hard to get back.”",
+        "3-5": "**Mrs. Lindqvist** is a farmer. She says: “That's {acres} acres of land. Once it's built on, it's hard to farm again.”"
+      }
+    },
+    {
+      "type": "look",
+      "target": "datacenter",
+      "highlight": "land.acres",
+      "mood": "thinking",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "6-8": "**Mrs. Lindqvist** (farmer): “That's {acres} acres we could farm. Once it's paved, it's hard to get back.”",
+        "9-12": "**Mrs. Lindqvist** (farmer): “{acres} acres taken out of farming. Land use is hard to undo.”"
+      }
+    },
+    {
+      "type": "look",
+      "target": "datacenter",
+      "mood": "wow",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "K-2": "**Jamal** builds things for his job. He says: “Building it means lots of jobs for people like me!”",
+        "3-5": "**Jamal** is a builder. He says: “Building it means years of work for people like me. And some people will work there after.”"
+      }
+    },
+    {
+      "type": "look",
+      "target": "datacenter",
+      "highlight": "jobs.permanent",
+      "mood": "wow",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "6-8": "**Jamal** (construction worker): “Building it means years of work.” Building jobs end when it's done. The panel's **rough estimate** shows long-term jobs.",
+        "9-12": "**Jamal** (construction worker): “Years of work.” Construction jobs end at build-out; the panel's **rough estimate** shows permanent jobs."
+      }
+    },
+    {
+      "type": "look",
+      "target": "water_tower",
+      "mood": "thinking",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "K-2": "**Mr. Chen** has two kids. He says: “Will it use too much water? Will our bills go up? I'm not sure yet.”",
+        "3-5": "**Mr. Chen** has two kids. He says: “Will it use too much water? Will our electric bill go up? I'm not sure yet.”"
+      }
+    },
+    {
+      "type": "look",
+      "target": "water_tower",
+      "highlight": "power.bill",
+      "mood": "thinking",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "6-8": "**Mr. Chen** (parent, unsure): “Will our bills go up? Is there enough water?” The bill change is a **rough estimate**.",
+        "9-12": "**Mr. Chen** (parent, undecided): “Who pays for new power lines? Is there enough water?” The bill change is a **rough estimate**."
+      }
+    },
+    {
+      "type": "do",
+      "action": "abatement",
+      "highlight": "money.per_student",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "6-8": "Try a tax deal: move the **property tax break** slider. Watch the schools' **rough estimate** change.",
+        "9-12": "Negotiate: adjust the **property tax break**. Watch how the per-student **rough estimate** responds."
+      },
+      "doneText": {
+        "6-8": "See how the deal changes the schools' number? Councils make this choice for real.",
+        "9-12": "Tax breaks attract companies but cut what schools collect. That trade-off is a real council decision."
+      }
+    },
+    {
+      "type": "reflect",
+      "id": "matters",
+      "kind": "vote",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "K-2": "Which matters **most** to you?",
+        "3-5": "You heard five neighbors. Which matters **most** to you?"
+      },
+      "choices": [
+        { "id": "schools", "text": "Money for schools 🏫" },
+        { "id": "jobs", "text": "Jobs 👷" },
+        { "id": "quiet", "text": "Quiet homes 🤫" },
+        { "id": "land", "text": "Farmland 🌽" },
+        { "id": "water", "text": "Water and bills 💧" }
+      ]
+    },
+    {
+      "type": "reflect",
+      "id": "evidence",
+      "kind": "short",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "6-8": "Which **two** things you heard tonight matter most to you, and why?",
+        "9-12": "Which **two** pieces of evidence matter most to your decision, and why?"
+      },
+      "placeholder": {
+        "6-8": "The two things that matter most are…",
+        "9-12": "The evidence I weigh most is…"
+      }
+    },
+    {
+      "type": "reflect",
+      "id": "council",
+      "kind": "vote",
+      "text": {
+        "K-2": "Time to **vote**! Should Wilmington let the company build it?",
+        "3-5": "Time to **vote**! Should Wilmington let the company build it?",
+        "6-8": "Council **vote**: should Wilmington approve the data center?",
+        "9-12": "Council **vote** on the application:"
+      },
+      "choices": [
+        { "id": "yes", "text": { "K-2": "Yes 👍", "3-5": "Yes 👍", "6-8": "Approve 👍", "9-12": "Approve" } },
+        { "id": "no", "text": { "K-2": "No 👎", "3-5": "No 👎", "6-8": "Reject 👎", "9-12": "Reject" } },
+        { "id": "rules", "text": { "K-2": "Yes, but with rules 📝", "3-5": "Yes, but with rules 📝", "6-8": "Approve with conditions 📝", "9-12": "Approve with conditions" } }
+      ]
+    },
+    {
+      "type": "reflect",
+      "id": "recommendation",
+      "kind": "short",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "6-8": "Explain your vote. Use **two numbers** from tonight, and name one rule you'd want.",
+        "9-12": "Write your recommendation: your vote, **two pieces of evidence** (say which are rough estimates), and one condition."
+      },
+      "placeholder": {
+        "6-8": "I voted … because …",
+        "9-12": "I recommend … because …"
+      }
+    },
+    {
+      "type": "talk",
+      "mood": "wow",
+      "fly": "home",
+      "text": {
+        "K-2": "You voted like a real town leader, {name}! Different people can choose differently, and that's okay.",
+        "3-5": "You decided like a real town leader, {name}! People can hear the same things and still choose differently.",
+        "6-8": "That's how real councils decide, {name}. People can look at the same evidence and still disagree. Good decisions show their reasons.",
+        "9-12": "That's how real councils work, {name}: the same evidence, weighed by different values. Strong decisions say which evidence they relied on."
+      }
+    }
+  ]
+}

@@ -3,7 +3,7 @@ import LearnHome from "./LearnHome";
 import { playableModules, readGuides, readModules } from "./lessonFiles";
 
 export const metadata: Metadata = {
-  title: "DCSim Learn",
+  title: "Neighbor Learn",
   description: "Lessons about data centers for grades K-12, inside a 3D model of a real town",
 };
 

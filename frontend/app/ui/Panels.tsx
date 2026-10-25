@@ -134,12 +134,38 @@ export function SettingsPanel({
   settings,
   onChange,
   onRemove,
+  only,
 }: {
   preset: Preset;
   settings: Settings;
   onChange: (s: Settings) => void;
   onRemove: () => void;
+  only?: "abatement"; // lessons: show just the property tax break
 }) {
+  if (only === "abatement") {
+    return (
+      <div style={{ ...panel, top: 190, right: 16, width: 280, padding: 18 }}>
+        <div style={{ fontSize: 13, color: "#607d8b" }}>Tax deal for the {preset.name} data center</div>
+        <div style={{ fontSize: 17, fontWeight: 800, margin: "4px 0 10px" }}>
+          Property tax break: <span style={{ color: "#1565c0" }}>{settings.abatementPct}%</span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={settings.abatementPct}
+          aria-label="Property tax break percent"
+          onChange={(e) => onChange({ ...settings, abatementPct: Number(e.target.value) })}
+          style={{ width: "100%", height: 28 }}
+        />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#607d8b" }}>
+          <span>0% (pays full tax)</span>
+          <span>100% (pays none)</span>
+        </div>
+      </div>
+    );
+  }
   const maxMW = Math.round((preset.mw * 1.5) / 10) * 10;
   const field: CSSProperties = { marginBottom: 14 };
   const select: CSSProperties = { width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #cfd8dc", background: "white" };
@@ -406,13 +432,22 @@ function useScrollWhen(on: boolean) {
   return ref;
 }
 
-// Row keys lessons can highlight (highlightMetric). Derived from the metric list; "noise.loud_zone" is the extra row below.
-export const METRIC_KEYS: string[] = [...METRICS.map((d) => d.lessonKey), "noise.loud_zone"];
+// Row keys lessons can highlight (highlightMetric) live in app/metricKeys.ts; METRICS[].lessonKey must match them.
+export { METRIC_KEYS } from "../metricKeys";
+
+// Small orange label stuck to a number, so a model number is never mistaken for a sourced fact
+function EstimateTag({ text }: { text: string }) {
+  return (
+    <span style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#e65100", background: "#fff3e0", border: "1px solid #ffb74d", borderRadius: 6, padding: "0 5px", marginTop: 2, textTransform: "uppercase", letterSpacing: 0.3 }}>
+      {text}
+    </span>
+  );
+}
 
 // One metric row: trust dot, label, sparkline across all years, animated value at
 // the current month. In "total" mode flows show their running sum; stocks show
 // the current level and are marked "now".
-function Row({ def, results, t, mode, hl }: { def: MetricDef; results: YearResult[]; t: number; mode: ViewMode; hl?: string | null }) {
+function Row({ def, results, t, mode, hl, tag }: { def: MetricDef; results: YearResult[]; t: number; mode: ViewMode; hl?: string | null; tag?: string }) {
   const on = hl === def.lessonKey;
   const ref = useScrollWhen(on);
   const useTotal = mode === "total" && !!def.total;
@@ -431,6 +466,7 @@ function Row({ def, results, t, mode, hl }: { def: MetricDef; results: YearResul
       <Sparkline series={series} t={t} color={color} />
       <span style={{ fontWeight: 700, whiteSpace: "nowrap", minWidth: 74, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
         <AnimatedNumber value={interpSeries(series, t)} format={fmtFn} />
+        {on && tag && <EstimateTag text={tag} />}
       </span>
     </div>
   );
@@ -492,6 +528,7 @@ export function ImpactsPanel({
   onOpenAnalytics,
   highlight,
   note,
+  tag,
 }: {
   results: YearResult[];
   t: number; // fractional index into results (months / 12)
@@ -505,6 +542,7 @@ export function ImpactsPanel({
   onOpenAnalytics?: () => void;
   highlight?: string | null; // a METRIC_KEYS row to point at (lessons)
   note?: string; // optional line under the verdict (lessons)
+  tag?: string; // label shown on the highlighted number (lessons: "model estimate")
 }) {
   const r = useMemo(() => interpResult(results, t), [results, t]);
   const [mode, setMode] = useState<ViewMode>("year");
@@ -556,14 +594,15 @@ export function ImpactsPanel({
       {SECTION_ORDER.map((sid) => (
         <Section key={sid} title={SECTIONS[sid].title} color={SECTIONS[sid].color}>
           {METRICS.filter((d) => d.section === sid).map((d) => (
-            <Row key={d.id} def={d} results={results} t={t} mode={mode} hl={highlight} />
+            <Row key={d.id} def={d} results={results} t={t} mode={mode} hl={highlight} tag={tag} />
           ))}
           {sid === "noise" && (
             <div ref={loudRef} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: highlight === "noise.loud_zone" ? "2px 4px" : 0, ...rowStyle(highlight === "noise.loud_zone") }}>
               <Dot tier="assumed" />
               <span style={{ color: "#546e7a", flex: 1 }}>Buildings in the loud zone</span>
-              <span style={{ fontWeight: 700 }}>
+              <span style={{ fontWeight: 700, textAlign: "right" }}>
                 <AnimatedNumber value={homesInZone} format={(n) => fmt(Math.round(n))} />
+                {highlight === "noise.loud_zone" && tag && <EstimateTag text={tag} />}
               </span>
             </div>
           )}

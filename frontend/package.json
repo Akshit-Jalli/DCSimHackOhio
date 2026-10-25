@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "precache": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/precache.ts"
+    "precache": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/precache.ts",
+    "check-lessons": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-lessons.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

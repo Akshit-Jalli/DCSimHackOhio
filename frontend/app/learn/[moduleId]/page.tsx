@@ -6,7 +6,7 @@ import LessonPlayer from "../LessonPlayer";
 import { LoadingScreen } from "../../ui/LoadingScreen";
 
 export const metadata: Metadata = {
-  title: "DCSim Learn",
+  title: "Neighbor Learn",
   description: "Lessons about data centers, inside a 3D model of a real town",
 };
 

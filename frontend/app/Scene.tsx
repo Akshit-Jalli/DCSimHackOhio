@@ -724,6 +724,10 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
   useEffect(() => {
     onEvent.current?.({ type: "results", year, result: simulating ? rI : null });
   }, [year, rI, simulating]);
+  const abatement = settings?.abatementPct;
+  useEffect(() => {
+    if (abatement != null) onEvent.current?.({ type: "abatement", pct: abatement });
+  }, [abatement]);
 
   // "Build here": the nearest buildable lot to the point the lesson suggests (hidden once placed)
   const suggestAt = lesson?.suggest;
@@ -854,7 +858,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
         {roads && people.length > 0 && <Agents roads={roads} people={people} selectedId={residentId} onPick={setResidentId} onPositions={onWalkerPositions} />}
 
         {/* Schools, hospital, water towers, power grid, with floating labels */}
-        <Landmarks site={site} r={placed ? r : null} onLabels={setLabels} />
+        <Landmarks site={site} r={placed ? r : null} onLabels={setLabels} badges={!lesson} />
         <LabelProjector />
 
         {/* The data center */}
@@ -912,10 +916,10 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
       <div style={{ position: "absolute", top: 16, left: 16, display: "flex", gap: 10, alignItems: "stretch", zIndex: 12 }}>
         <div style={{ ...panel, position: "relative", padding: "8px 14px 8px 8px", display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 34, height: 34, borderRadius: 10, background: "linear-gradient(135deg, #1e88e5, #43a047)", color: "white", fontWeight: 800, fontSize: 13, display: "flex", alignItems: "center", justifyContent: "center", letterSpacing: 0.5 }}>
-            DC
+            N
           </div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>DCSim</div>
+            <div style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.1 }}>Neighbor</div>
             {townMenu}
           </div>
         </div>
@@ -1020,6 +1024,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
           settings={settings}
           onOpenAnalytics={lesson ? undefined : () => setShowAnalytics(true)}
           highlight={lesson?.highlightMetric}
+          tag={lesson ? "model estimate" : undefined}
         />
       )}
 
@@ -1083,7 +1088,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
 
       {/* Right: settings — only once confirmed (and hidden under Town data when that's open) */}
       {simulating && settings && preset && !showTown && (lesson?.showSettings ?? true) && (
-        <SettingsPanel preset={preset} settings={settings} onChange={setSettings} onRemove={remove} />
+        <SettingsPanel preset={preset} settings={settings} onChange={setSettings} onRemove={remove} only={lesson?.showSettings === "abatement" ? "abatement" : undefined} />
       )}
 
       {/* Bottom: build menu in build mode; time bar in simulate mode */}

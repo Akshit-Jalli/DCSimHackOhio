@@ -19,20 +19,36 @@ const PATH = "M140 156 C 290 70 360 80 500 120 S 760 210 860 168 C 990 230 960 3
 
 type State = "done" | "open" | "locked" | "soon";
 
-// Level select: Module 1 open, each next one opens when the one before is done.
+// ?demo=1 (for presentations) opens every built module for the rest of this browser session.
+// This component only renders in the browser (after saved progress is read), so window is available.
+function readDemo() {
+  const inUrl = new URLSearchParams(window.location.search).get("demo") === "1";
+  try {
+    if (inUrl) sessionStorage.setItem("neighbor-demo", "1");
+    return sessionStorage.getItem("neighbor-demo") === "1";
+  } catch {
+    return inUrl;
+  }
+}
+
+// Level select: a built module opens once every built module before it is done
+// ("Coming soon" modules don't block the ones after them).
 export function ModuleMap({ profile, modules, guides, playable }: { profile: Profile; modules: ModuleInfo[]; guides: GuideInfo[]; playable: string[] }) {
   const [openId, setOpenId] = useState<string | null>(null);
   const [teacher, setTeacher] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [demo] = useState(readDemo);
   const band = profile.band;
   const guide = guides.find((g) => g.id === profile.guide) ?? guides[0];
 
+  const built = (i: number) => playable.includes(modules[i].id);
+  const isDone = (i: number) => !!profile.modules[modules[i].id]?.done;
+  // The built module before i that still needs finishing (what the lock message names)
+  const blocker = (i: number) => modules.slice(0, i).map((_, j) => j).reverse().find((j) => built(j) && !isDone(j));
   const stateOf = (i: number): State => {
-    const m = modules[i];
-    if (profile.modules[m.id]?.done) return "done";
-    const unlocked = i === 0 || !!profile.modules[modules[i - 1].id]?.done;
-    if (!unlocked) return "locked";
-    return playable.includes(m.id) ? "open" : "soon";
+    if (!built(i)) return "soon";
+    if (isDone(i)) return "done";
+    return demo || blocker(i) === undefined ? "open" : "locked";
   };
   const current = modules.findIndex((_, i) => stateOf(i) === "open");
   // The guide stands at the next module to play, or at the last one finished
@@ -50,8 +66,12 @@ export function ModuleMap({ profile, modules, guides, playable }: { profile: Pro
           <div style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.1 }}>Hi, {profile.name}!</div>
           <div style={{ fontSize: 17, fontWeight: 700, color: MUTED }}>
             {BAND_LABEL[band].short} · exploring with {guide.name}
+            {demo && <span style={{ marginLeft: 10, fontSize: 14, background: "#fff3e0", color: "#e65100", borderRadius: 8, padding: "2px 8px" }}>Demo: all built modules open</span>}
           </div>
         </div>
+        <Link href="/learn/my-work" style={{ ...bigButton("plain"), minHeight: 50, fontSize: 17 }}>
+          📄 My work
+        </Link>
         <button onClick={() => setTeacher(true)} style={{ ...bigButton("plain"), minHeight: 50, fontSize: 17 }}>
           📋 For teachers
         </button>
@@ -128,7 +148,7 @@ export function ModuleMap({ profile, modules, guides, playable }: { profile: Pro
       {opened && (
         <Modal onClose={() => setOpenId(null)}>
           {/* onStart closes the card first: Next keeps this page's state, so it would still be open when the student comes back */}
-          <ModuleCard module={opened} index={openedIndex} state={stateOf(openedIndex)} band={band} profile={profile} prevTitle={openedIndex > 0 ? textFor(modules[openedIndex - 1].title, band) : ""} onStart={() => setOpenId(null)} />
+          <ModuleCard module={opened} index={openedIndex} state={stateOf(openedIndex)} band={band} profile={profile} prevTitle={blocker(openedIndex) !== undefined ? textFor(modules[blocker(openedIndex)!].title, band) : ""} onStart={() => setOpenId(null)} />
         </Modal>
       )}
 
@@ -237,7 +257,7 @@ function TeacherNotes({ modules, startBand, playable }: { modules: ModuleInfo[];
               )}
               {m.teacher.standards?.[band] && (
                 <div style={{ fontSize: 16, lineHeight: 1.45 }}>
-                  <b>NGSS:</b>
+                  <b>Supports:</b>
                   <ul style={{ margin: "4px 0 0", paddingLeft: 22, listStyle: "disc" }}>
                     {m.teacher.standards[band]!.map((s) => (
                       <li key={s}>{s}</li>

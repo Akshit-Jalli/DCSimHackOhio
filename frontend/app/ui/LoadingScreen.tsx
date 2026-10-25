@@ -4,7 +4,7 @@ const SKY_TOP = "#5e9fdc";
 const SKY_HORIZON = "#e9eef0";
 const UI_FONT = "var(--font-geist-sans), system-ui, sans-serif";
 
-// Full-screen "DCSim / Loading ..." cover. Optional checklist (download progress), error and buttons.
+// Full-screen "Neighbor / Loading ..." cover. Optional checklist (download progress), error and buttons.
 export function LoadingScreen({
   visible,
   title,
@@ -43,9 +43,9 @@ export function LoadingScreen({
         }}
       >
         <div style={{ width: 56, height: 56, borderRadius: 16, background: "linear-gradient(135deg, #1e88e5, #43a047)", color: "white", fontWeight: 800, fontSize: 20, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 8px 24px rgba(0,0,0,0.2)" }}>
-          DC
+          N
         </div>
-        <div style={{ fontSize: 26, fontWeight: 800 }}>DCSim</div>
+        <div style={{ fontSize: 26, fontWeight: 800 }}>Neighbor</div>
         <div style={{ fontSize: 14, color: "#455a64", display: "flex", alignItems: "center", gap: 6 }}>
           {title}
           {!error && [0, 1, 2].map((i) => (

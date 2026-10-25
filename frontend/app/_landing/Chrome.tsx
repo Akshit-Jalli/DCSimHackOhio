@@ -10,7 +10,7 @@ export function Header({ tone = "page" }: { tone?: "over" | "page" }) {
     <header className={over ? "absolute inset-x-0 top-0 z-10 text-white" : "border-b border-[var(--rule)]"}>
       <div className={`mx-auto flex max-w-7xl items-center justify-between px-4 py-5 md:px-8 ${over ? "border-b border-white/20" : ""}`}>
         <Link href="/" className="lp-serif text-[22px] leading-none">
-          dcsim
+          neighbor
         </Link>
         <nav className="flex items-center gap-6 text-sm">
           <Link href="/#product" className="hidden hover:underline sm:inline">Product</Link>
@@ -34,7 +34,7 @@ export function Footer() {
     <footer className="bg-[var(--ink)] text-[#bdb8aa]">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 md:grid-cols-[2fr_1fr_1fr_1fr] md:px-8">
         <div>
-          <p className="lp-serif text-[22px] text-[var(--paper)]">dcsim</p>
+          <p className="lp-serif text-[22px] text-[var(--paper)]">neighbor</p>
           <p className="mt-3 max-w-xs text-sm leading-relaxed">A data center impact simulator for the towns being asked to host one. A student prototype built at HackOhio 2026.</p>
         </div>
         <FooterCol title="Product" links={[{ href: "/simulate", label: "Simulator" }, { href: "/learn", label: "Learn (K-12)" }, { href: "/#method", label: "Method" }, { href: "/#sources", label: "Sources" }]} />

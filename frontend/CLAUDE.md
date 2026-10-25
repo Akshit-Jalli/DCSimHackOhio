@@ -1,4 +1,6 @@
-# DCSim frontend: 3D data center impact map
+# Neighbor frontend: 3D data center impact map
+
+Product name: **Neighbor**, tagline "What kind of neighbor is a data center?" (formerly DCSim). Folders, routes, the GitHub repo and the localStorage key `dcsim-learn-v1` keep the old name on purpose.
 
 Hackathon project (HackOhio). Users drop a data center onto a 3D model of a real town and see its impacts on water, power bills, schools/taxes, noise, land, and jobs over 2026 to 2041.
 Owner of this folder: dk (3D map / frontend). Teammates own the Python simulation engine and data.
@@ -38,6 +40,20 @@ dk prefers plain-language explanations, short answers, and direct step-by-step i
   - Shrink: keep only the fields the map uses, round coordinates to 6 decimals, sort buildings biggest first. 63 MB -> 22 MB for New Albany.
   - `town.json` is written last. A folder without it is an unfinished download and resumes. To re-shrink after changing the kept fields, delete `town.json` and rerun precache (raw files are kept).
 - API routes (`app/api/town/`): `GET /api/town` (cached list), `GET /api/town/search?q=`, `POST /api/town/load`, `GET /api/town/<slug>` (ready / loading with layers done / error / missing), `GET /api/town/<slug>/<layer>` (buildings, landcover, roads, water, places, infrastructure).
+
+## K-12 learning (/learn)
+Pivot: K-12 ed tech. No accounts; everything stays in the browser.
+- `/learn`: onboarding (first name, grade band K-2/3-5/6-8/9-12, pick a guide), then the module map (level select; each module unlocks when the previous is done). "📋 For teachers" shows goal, minutes and NGSS per band. "📄 My work" = printable page of guesses, votes and written answers.
+- `/learn/<module>`: lesson player on top of the 3D scene, always Wilmington. Step types: talk, look, predict, do (place / year), check, reflect (vote / short). Read-aloud uses on-device voices only (auto for K-2).
+- `/learn/build`: Free Build in kid mode (only ready towns, no town search or area picker). `/simulate` is unchanged.
+- Content is data: `content/modules.json`, `content/guides.json`, `content/lessons/<id>.json`. How to write lessons: `content/README.md`. Run `npm run check-lessons` after editing.
+- Built: Module 1 (What is a data center?) and Module 6 (You decide: town council capstone, Hyperscale, 5 pretend residents, tax-break step for 6-12). Next in order: Water, Power & bills, Money & schools, Noise & land.
+- Unlocking: a built module opens once every built module before it is done ("Coming soon" ones don't block). `/learn?demo=1` opens all built modules for the browser session (sessionStorage `neighbor-demo`).
+- Facts: every outside number lives in the lesson's `facts` with a source; steps `cite` them and the source shows under the bubble. Highlighted panel numbers get a "rough estimate" tag in lessons.
+- Numbers rule: lesson facts are only worked out from the data center's size (`app/learn/facts.ts`, homes assume full power all year) with the per-home figure and its source in the lesson file. Anything from the fake engine is labeled "rough estimate"; pin badges are off in lessons.
+- Scene control: `app/lessonControl.ts` (camera fly targets, lock camera, allowed presets, panels, highlights, "Build here!" suggestion, events back to the lesson). Without a `lesson` prop Scene is the normal simulator.
+- Progress: `app/learn/progress.ts`, one localStorage key `dcsim-learn-v1` (memory fallback if storage is blocked).
+- To verify with a teacher: NGSS picks in modules.json; EIA 10,791 kWh/home (2022) in module-1.json.
 
 ## Scale and coordinates (keep these)
 - 1 scene unit = 1 meter. x = east, z = south (north is -z), y = up.

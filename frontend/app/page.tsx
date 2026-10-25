@@ -9,7 +9,7 @@ import heroNight from "@/public/landing/hero-night.jpg";
 import cardSite from "@/public/landing/card-site.jpg";
 
 export const metadata: Metadata = {
-  title: "dcsim · See what a data center would do to your town",
+  title: "Neighbor · What kind of neighbor is a data center?",
   description: "Place a data center in a real US town and compare 15 years with and without it. Every number shows its formula and its source.",
 };
 

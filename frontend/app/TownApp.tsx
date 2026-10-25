@@ -36,7 +36,7 @@ export default function TownApp({ kidMode = false }: { kidMode?: boolean }) {
     setTownState(t);
     setDownload(null);
     const offset = areaOffsetText(t);
-    document.title = `DCSim · ${t.name}, ${t.state}${offset ? ` (${offset})` : ""}`;
+    document.title = `Neighbor · ${t.name}, ${t.state}${offset ? ` (${offset})` : ""}`;
     const url = new URL(window.location.href);
     if (t.slug === DEFAULT_TOWN) url.searchParams.delete("town");
     else url.searchParams.set("town", t.slug);

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import TownApp from "../TownApp";
 
 export const metadata: Metadata = {
-  title: "DCSim · Simulator",
+  title: "Neighbor · Simulator",
   description: "Place a data center in a real town and compare 15 years with and without it",
 };
 

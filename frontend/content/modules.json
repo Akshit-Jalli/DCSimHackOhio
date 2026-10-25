@@ -16,7 +16,12 @@
         "6-8": "Students describe how a data center turns electricity into computing and heat, estimate its electricity use in home-equivalents, and name trade-offs for a town.",
         "9-12": "Students convert a data center's power (MW) into yearly energy (MWh) and home-equivalents, explain why cooling uses water, and weigh local costs and benefits."
       },
-      "minutes": { "K-2": "10–15", "3-5": "15–20", "6-8": "20–25", "9-12": "20–30" },
+      "minutes": {
+        "K-2": "10–15",
+        "3-5": "15–20",
+        "6-8": "20–25",
+        "9-12": "20–30"
+      },
       "standards": {
         "K-2": [
           "K-ESS3-3: Communicate solutions that will reduce the impact of humans on the land, water, air, and/or other living things in the local environment.",
@@ -42,34 +47,77 @@
     "icon": "⚡",
     "title": "Power",
     "blurb": "Where does all that electricity come from?",
-    "teacher": { "goal": "Planned: electricity supply, the grid and substations, and who pays for new power lines." }
+    "teacher": {
+      "goal": "Planned: electricity supply, the grid and substations, and who pays for new power lines."
+    }
   },
   {
     "id": "module-3",
     "icon": "💧",
     "title": "Water",
     "blurb": "Computers get hot. How do you cool them?",
-    "teacher": { "goal": "Planned: cooling, water use and a town's water supply." }
+    "teacher": {
+      "goal": "Planned: cooling, water use and a town's water supply."
+    }
   },
   {
     "id": "module-4",
     "icon": "🏫",
     "title": "Money and schools",
     "blurb": "Taxes, tax breaks and what schools get.",
-    "teacher": { "goal": "Planned: property taxes, tax abatements and PILOT payments to schools." }
+    "teacher": {
+      "goal": "Planned: property taxes, tax abatements and PILOT payments to schools."
+    }
   },
   {
     "id": "module-5",
     "icon": "🌳",
     "title": "Noise and land",
     "blurb": "What changes for the neighbors?",
-    "teacher": { "goal": "Planned: noise, setbacks and farmland." }
+    "teacher": {
+      "goal": "Planned: noise, setbacks and farmland."
+    }
   },
   {
     "id": "module-6",
     "icon": "🗳️",
     "title": "You decide",
-    "blurb": "Should your town say yes?",
-    "teacher": { "goal": "Planned: weigh all the evidence and make a case at a pretend town meeting." }
+    "blurb": {
+      "K-2": "Be on the town council and vote!",
+      "3-5": "Hear from neighbors, then vote as the town council.",
+      "6-8": "Weigh the evidence and cast your council vote.",
+      "9-12": "Weigh trade-offs and defend your council vote."
+    },
+    "teacher": {
+      "goal": {
+        "K-2": "Students listen to different neighbors' views, notice that a choice has good and bad sides, and vote.",
+        "3-5": "Students compare benefits (taxes, jobs) and costs (noise, land, water, bills) from several viewpoints and make a choice.",
+        "6-8": "Students weigh evidence from several viewpoints, try a tax deal, and justify a council vote with two numbers and a condition.",
+        "9-12": "Students evaluate a land-use proposal against trade-offs, separate sourced facts from model estimates, and write a recommendation with conditions."
+      },
+      "minutes": {
+        "K-2": "15–20",
+        "3-5": "20–25",
+        "6-8": "30–40",
+        "9-12": "35–45"
+      },
+      "standards": {
+        "K-2": [
+          "K-2-ETS1-1: Ask questions, make observations, and gather information about a situation people want to change to define a simple problem that can be solved through the development of a new or improved object or tool.",
+          "K-ESS3-3: Communicate solutions that will reduce the impact of humans on the land, water, air, and/or other living things in the local environment."
+        ],
+        "3-5": [
+          "3-5-ETS1-2: Generate and compare multiple possible solutions to a problem based on how well each is likely to meet the criteria and constraints of the problem."
+        ],
+        "6-8": [
+          "MS-ETS1-2: Evaluate competing design solutions using a systematic process to determine how well they meet the criteria and constraints of the problem.",
+          "MS-ESS3-4: Construct an argument supported by evidence for how increases in human population and per-capita consumption of natural resources impact Earth's systems."
+        ],
+        "9-12": [
+          "HS-ETS1-3: Evaluate a solution to a complex real-world problem based on prioritized criteria and trade-offs that account for a range of constraints, including cost, safety, reliability, and aesthetics, as well as possible social, cultural, and environmental impacts.",
+          "C3 Framework D2.Civ.13.9-12: Evaluate public policies in terms of intended and unintended outcomes, and related consequences."
+        ]
+      }
+    }
   }
 ]
