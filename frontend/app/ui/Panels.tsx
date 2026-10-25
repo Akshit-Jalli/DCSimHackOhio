@@ -34,13 +34,15 @@ const hint: CSSProperties = { fontSize: 11, color: "#90a4ae", marginTop: 4, line
 export function BuildMenu({
   activeId,
   onStartDrag,
+  only,
 }: {
   activeId: string | null;
   onStartDrag: (p: Preset, e: ReactPointerEvent) => void;
+  only?: string[]; // preset ids to show (lessons); default all
 }) {
   return (
     <div style={{ display: "flex", gap: 10 }}>
-      {PRESETS.map((p) => (
+      {PRESETS.filter((p) => !only || only.includes(p.id)).map((p) => (
         <button
           key={p.id}
           onPointerDown={(e) => onStartDrag(p, e)}
@@ -388,10 +390,31 @@ function Dot({ tier }: { tier: Tier }) {
   );
 }
 
+// Style for a row a lesson is pointing at
+function rowStyle(on: boolean): CSSProperties {
+  return on
+    ? { background: "#fff59d", borderRadius: 6, boxShadow: "0 0 0 3px #ffb300", animation: "dcrowpulse 1.4s ease-in-out infinite" }
+    : {};
+}
+
+// Scrolls a highlighted row into view inside the panel
+function useScrollWhen(on: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (on) ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [on]);
+  return ref;
+}
+
+// Row keys lessons can highlight (highlightMetric). Derived from the metric list; "noise.loud_zone" is the extra row below.
+export const METRIC_KEYS: string[] = [...METRICS.map((d) => d.lessonKey), "noise.loud_zone"];
+
 // One metric row: trust dot, label, sparkline across all years, animated value at
 // the current month. In "total" mode flows show their running sum; stocks show
 // the current level and are marked "now".
-function Row({ def, results, t, mode }: { def: MetricDef; results: YearResult[]; t: number; mode: ViewMode }) {
+function Row({ def, results, t, mode, hl }: { def: MetricDef; results: YearResult[]; t: number; mode: ViewMode; hl?: string | null }) {
+  const on = hl === def.lessonKey;
+  const ref = useScrollWhen(on);
   const useTotal = mode === "total" && !!def.total;
   const series = useMemo(() => metricSeries(results, def, useTotal ? "total" : "year").p50, [results, def, useTotal]);
   const fmtFn = useTotal && def.total ? def.total.format : def.format;
@@ -399,7 +422,7 @@ function Row({ def, results, t, mode }: { def: MetricDef; results: YearResult[];
   const now = mode === "total" && !def.total; // a stock, not a flow: same number in both modes
   const color = SECTIONS[def.section].color;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 3, opacity: now ? 0.75 : 1 }}>
+    <div ref={ref} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 3, opacity: now ? 0.75 : 1, padding: on ? "2px 4px" : 0, ...rowStyle(on) }}>
       <Dot tier={def.tier} />
       <span style={{ color: "#546e7a", flex: 1 }} title={def.about}>
         {text}
@@ -467,6 +490,8 @@ export function ImpactsPanel({
   builtBy,
   settings,
   onOpenAnalytics,
+  highlight,
+  note,
 }: {
   results: YearResult[];
   t: number; // fractional index into results (months / 12)
@@ -478,9 +503,12 @@ export function ImpactsPanel({
   builtBy: number | null;
   settings: Settings;
   onOpenAnalytics?: () => void;
+  highlight?: string | null; // a METRIC_KEYS row to point at (lessons)
+  note?: string; // optional line under the verdict (lessons)
 }) {
   const r = useMemo(() => interpResult(results, t), [results, t]);
   const [mode, setMode] = useState<ViewMode>("year");
+  const loudRef = useScrollWhen(highlight === "noise.loud_zone");
   const tab = (m: ViewMode, text: string) => (
     <button
       type="button"
@@ -500,7 +528,9 @@ export function ImpactsPanel({
         <div style={{ fontSize: 12, color: "#607d8b", textAlign: "right", paddingBottom: 3 }}>{status}</div>
       </div>
 
+      <style>{`@keyframes dcrowpulse { 0%, 100% { box-shadow: 0 0 0 3px #ffb300 } 50% { box-shadow: 0 0 0 6px rgba(255,179,0,0.35) } }`}</style>
       <Verdict results={results} builtBy={builtBy} moratoriumRate={moratoriumRate} settings={settings} />
+      {note && <div style={{ fontSize: 11, color: "#607d8b", margin: "-4px 0 10px" }}>{note}</div>}
 
       {otherTown && (
         <div style={{ fontSize: 11, color: "#ef6c00", background: "#fff3e0", borderRadius: 6, padding: "4px 8px", margin: "0 0 10px" }}>
@@ -526,10 +556,10 @@ export function ImpactsPanel({
       {SECTION_ORDER.map((sid) => (
         <Section key={sid} title={SECTIONS[sid].title} color={SECTIONS[sid].color}>
           {METRICS.filter((d) => d.section === sid).map((d) => (
-            <Row key={d.id} def={d} results={results} t={t} mode={mode} />
+            <Row key={d.id} def={d} results={results} t={t} mode={mode} hl={highlight} />
           ))}
           {sid === "noise" && (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+            <div ref={loudRef} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, padding: highlight === "noise.loud_zone" ? "2px 4px" : 0, ...rowStyle(highlight === "noise.loud_zone") }}>
               <Dot tier="assumed" />
               <span style={{ color: "#546e7a", flex: 1 }}>Buildings in the loud zone</span>
               <span style={{ fontWeight: 700 }}>

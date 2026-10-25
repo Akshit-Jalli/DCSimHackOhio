@@ -7,7 +7,9 @@ import { useFrame } from "@react-three/fiber";
 // A projector inside the Canvas moves each label to its 3D spot every frame.
 
 export type Badge = { text: string; tone: "bad" | "warn" | "good" | "info" } | null;
-export type Label = { id: string; x: number; y: number; z: number; icon: string; name: string; badge: Badge; small?: boolean };
+// kind: what the pin is ("school", "water_tower", ...) so a lesson can point at it.
+// highlight: a lesson is pointing at this pin (bigger, name shown, pulsing ring).
+export type Label = { id: string; x: number; y: number; z: number; icon: string; name: string; badge: Badge; small?: boolean; kind?: string; highlight?: boolean };
 
 const registry = new Map<string, { el: HTMLDivElement; pos: THREE.Vector3 }>();
 
@@ -39,7 +41,8 @@ export function LabelProjector() {
 
 function Pin({ label }: { label: Label }) {
   const [hover, setHover] = useState(false);
-  const { badge, small } = label;
+  const { badge, small, highlight } = label;
+  const showName = hover || highlight;
   const ref = (el: HTMLDivElement | null) => {
     if (el) registry.set(label.id, { el, pos: new THREE.Vector3(label.x, label.y, label.z) });
     else registry.delete(label.id);
@@ -49,7 +52,7 @@ function Pin({ label }: { label: Label }) {
   }, [label.id, label.x, label.y, label.z]);
 
   return (
-    <div ref={ref} style={{ position: "absolute", left: 0, top: 0, visibility: "hidden", display: "flex", flexDirection: "column", alignItems: "center", willChange: "transform" }}>
+    <div ref={ref} style={{ position: "absolute", left: 0, top: 0, visibility: "hidden", display: "flex", flexDirection: "column", alignItems: "center", willChange: "transform", zIndex: highlight ? 2 : undefined }}>
       {badge && (
         <div style={{ background: TONE[badge.tone], color: "white", fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: 8, marginBottom: 3, whiteSpace: "nowrap", boxShadow: "0 2px 6px rgba(0,0,0,0.25)" }}>
           {badge.text}
@@ -59,22 +62,24 @@ function Pin({ label }: { label: Label }) {
         onPointerEnter={() => setHover(true)}
         onPointerLeave={() => setHover(false)}
         style={{
+          position: "relative",
           pointerEvents: "auto",
           display: "flex",
           alignItems: "center",
           gap: 5,
-          background: "rgba(255,255,255,0.93)",
-          border: badge ? `2px solid ${TONE[badge.tone]}` : "1px solid rgba(255,255,255,0.9)",
+          background: highlight ? "#fffde7" : "rgba(255,255,255,0.93)",
+          border: highlight ? "3px solid #ffb300" : badge ? `2px solid ${TONE[badge.tone]}` : "1px solid rgba(255,255,255,0.9)",
           borderRadius: 999,
-          padding: hover ? "3px 10px 3px 5px" : small ? 2 : 3,
+          padding: showName ? "3px 10px 3px 5px" : small ? 2 : 3,
           boxShadow: "0 3px 10px rgba(0,0,0,0.25)",
-          fontSize: small ? 13 : 16,
+          fontSize: highlight ? 22 : small ? 13 : 16,
           lineHeight: 1,
           cursor: "default",
         }}
       >
+        {highlight && <span style={{ position: "absolute", inset: -6, borderRadius: 999, border: "3px solid #ffb300", animation: "dcpinpulse 1.4s ease-out infinite", pointerEvents: "none" }} />}
         <span>{label.icon}</span>
-        {hover && <span style={{ fontSize: 12, fontWeight: 700, color: "#263238", whiteSpace: "nowrap" }}>{label.name}</span>}
+        {showName && <span style={{ fontSize: highlight ? 15 : 12, fontWeight: 700, color: "#263238", whiteSpace: "nowrap" }}>{label.name}</span>}
       </div>
       <div style={{ width: 2, height: small ? 10 : 16, background: "rgba(255,255,255,0.95)", boxShadow: "0 1px 2px rgba(0,0,0,0.3)" }} />
     </div>
@@ -85,6 +90,7 @@ function Pin({ label }: { label: Label }) {
 export function LabelLayer({ labels }: { labels: Label[] }) {
   return (
     <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 5, fontFamily: "var(--font-geist-sans), system-ui, sans-serif" }}>
+      <style>{`@keyframes dcpinpulse { 0% { transform: scale(1); opacity: 0.9 } 100% { transform: scale(1.6); opacity: 0 } }`}</style>
       {labels.map((l) => (
         <Pin key={l.id} label={l} />
       ))}
