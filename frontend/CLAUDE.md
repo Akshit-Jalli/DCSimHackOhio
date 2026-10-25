@@ -7,7 +7,7 @@ dk prefers plain-language explanations, short answers, and direct step-by-step i
 ## Stack
 - Next.js 16 (App Router, TypeScript, Turbopack) + React 19
 - three 0.186, @react-three/fiber 9, @react-three/drei 10
-- Run: `npm run dev` in this folder, open http://localhost:3000
+- Run: `npm run dev` in this folder. http://localhost:3000 is the landing page; the 3D simulator is at http://localhost:3000/simulate (`?town=<slug>` works there).
 - Windows machine (cmd). Python 3.14 with the `overturemaps` package is installed (run it as `python -m overturemaps`). The town download calls it.
 - Node 24 runs `scripts/precache.ts` directly (TypeScript type stripping). Code shared with it (`lib/towns.ts`) must stay plain TS: no enums, imports with `.ts` extensions.
 - AGENTS.md says this Next.js version has breaking changes: check `node_modules/next/dist/docs/` before using Next APIs.
@@ -48,6 +48,8 @@ dk prefers plain-language explanations, short answers, and direct step-by-step i
 - Data center presets: Enterprise 60 MW / 2x2 tiles, Hyperscale 250 MW / 4x4, AI campus 1000 MW / 6x6. A data hall = 62.5 MW.
 
 ## Files (app/)
+- `page.tsx` + `_landing/`: landing page (from the teammates' `landing-page` branch). `terms/`, `privacy/`: legal pages. Landing images in `public/landing/`.
+- `simulate/page.tsx`: the simulator route; renders `TownApp`.
 - `TownApp.tsx`: picks the town (URL, search), downloads/polls, shows the loading screen, mounts `Scene`.
 - `Scene.tsx`: main screen. Canvas, sky, lights, day/night, drag-and-drop, placement rules, builds the engine input, all UI wiring.
 - `mapConfig.tsx`: town center, `setTown()`, `layerUrl()`, grid, `toXY` / `toLatLon`, edge clipping planes.
