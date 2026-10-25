@@ -315,6 +315,11 @@ function areaOf(pick: TownPick, center?: LatLon): { slug: string; center: LatLon
 // Start downloading a town or an area of it (or reuse the cache / a download already running). Returns its slug.
 // town.json is written last, so a folder without it is an unfinished download that will resume.
 export function loadTown(pick: TownPick, areaCenter?: LatLon): { slug: string; promise: Promise<Town> } {
+  // Serverless hosts (Vercel) have no Python and no writable disk: the generator can't run there.
+  // Wilmington still works from the files in public/. Set TOWN_GENERATOR=off to force this elsewhere.
+  if (process.env.VERCEL || process.env.TOWN_GENERATOR === "off") {
+    throw new Error("This deployment only has Wilmington, Ohio. Building other towns needs the Python town generator, which runs on a full server, not here.");
+  }
   if (areaCenter && distanceM(pick, areaCenter) > MAX_AREA_OFFSET_M + 1000) {
     throw new Error(`That area is more than ${MAX_AREA_OFFSET_M / 1000} km from ${pick.name}.`);
   }
