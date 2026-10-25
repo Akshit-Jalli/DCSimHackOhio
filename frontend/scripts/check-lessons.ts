@@ -14,7 +14,8 @@ const GUIDE_DRAWINGS = ["volt", "drip", "bit", "fern"]; // app/learn/Guide.tsx
 const LANDMARKS = ["school", "college", "hospital", "fire", "police", "cityhall", "water", "water_tower", "substation"];
 const FLY_WORDS = ["home", "datacenter", "loudzone", ...LANDMARKS];
 const FACTS = ["mw", "mwh", "homes"];
-const PLACEHOLDERS = ["name", "guide", "mw", "mwh", "homes", "homeMWh"];
+const PLACEHOLDERS = ["name", "guide", "mw", "mwh", "homes", "homeMWh", "acres", "fields"];
+let lessonFactKeys: string[] = []; // the current lesson's "facts" keys also work as placeholders
 const LONG = { "K-2": 130, "3-5": 170, "6-8": 220, "9-12": 240 }; // characters before the bubble gets crowded
 
 let errors = 0;
@@ -50,7 +51,7 @@ function checkText(where: string, t: Text | undefined, bands: Band[], extraVars:
   const all = typeof t === "string" ? bands.map((b) => [b, t] as const) : bands.filter((b) => t[b]).map((b) => [b, t[b]!] as const);
   for (const [b, s] of all) {
     for (const m of s.matchAll(/\{(\w+)\}/g)) {
-      if (![...PLACEHOLDERS, ...extraVars].includes(m[1])) error(where, `unknown placeholder {${m[1]}} (${b})`);
+      if (![...PLACEHOLDERS, ...lessonFactKeys, ...extraVars].includes(m[1])) error(where, `unknown placeholder {${m[1]}} (${b})`);
     }
     if ((s.match(/\*\*/g) ?? []).length % 2) error(where, `unmatched ** in "${s.slice(0, 40)}…" (${b})`);
     if (bubble && s.length > LONG[b]) warn(where, `${b} text is ${s.length} characters (aim for under ${LONG[b]})`);
@@ -78,7 +79,17 @@ function checkLesson(file: string, moduleIds: string[]) {
   if (!Array.isArray(lesson.steps) || !lesson.steps.length) return error(L, "has no steps");
   if (lesson.startYear != null && (lesson.startYear < YEAR_START || lesson.startYear > YEAR_END)) error(L, `startYear must be ${YEAR_START}-${YEAR_END}`);
 
-  const usesHomes = JSON.stringify(lesson.steps).match(/\{(homes|homeMWh)\}|"fact":\s*"homes"/);
+  // Every fact needs a value and a source; text can use it as {key}
+  lessonFactKeys = Object.keys(lesson.facts ?? {});
+  for (const [k, v] of Object.entries(lesson.facts ?? {})) {
+    if (v?.value == null || v.value === "") error(`${L} facts.${k}`, `needs a "value"`);
+    if (!v?.source || v.source.length < 10) error(`${L} facts.${k}`, `needs a real "source" (where the number comes from)`);
+  }
+  const stepsJson = JSON.stringify(lesson.steps);
+  if (/\{fields\}/.test(stepsJson) && typeof lesson.facts?.footballFieldAcres?.value !== "number") {
+    error(L, `uses {fields}, so "facts.footballFieldAcres" needs a number "value" and a "source"`);
+  }
+  const usesHomes = stepsJson.match(/\{(homes|homeMWh)\}|"fact":\s*"homes"/);
   if (usesHomes && !(lesson.facts?.homeMWhPerYear?.value && lesson.facts.homeMWhPerYear.source)) {
     error(L, `uses the homes fact, so "facts.homeMWhPerYear" needs a "value" and a "source"`);
   }
@@ -97,6 +108,7 @@ function checkLesson(file: string, moduleIds: string[]) {
     const bands = (s.bands ?? BANDS) as Band[];
     for (const b of bands) if (!BANDS.includes(b)) error(W, `"${b}" in "bands" is not a grade band`);
     if (s.mood && !["happy", "thinking", "wow"].includes(s.mood)) error(W, `mood must be happy, thinking or wow`);
+    for (const k of s.cite ?? []) if (!lesson.facts?.[k]) error(W, `cites "${k}" but the lesson has no fact with that key`);
     switch (s.type) {
       case "talk":
         checkText(W, s.text, bands);
@@ -125,6 +137,7 @@ function checkLesson(file: string, moduleIds: string[]) {
         checkText(W, s.text, bands);
         if (s.doneText) checkText(`${W} doneText`, s.doneText, bands);
         checkFly(W, s.fly);
+        if (s.highlight && !METRIC_KEYS.includes(s.highlight)) error(W, `unknown highlight "${s.highlight}" (see app/metricKeys.ts)`);
         if (s.action === "place") {
           if (s.preset && !PRESETS.some((p) => p.id === s.preset)) error(W, `unknown preset "${s.preset}" (use ${PRESETS.map((p) => p.id).join(", ")})`);
           if (s.suggest && (Math.abs(s.suggest.x) > MAP_HALF || Math.abs(s.suggest.z) > MAP_HALF)) error(W, "suggested spot is off the map");
@@ -132,7 +145,10 @@ function checkLesson(file: string, moduleIds: string[]) {
           if (typeof s.atLeast !== "number" || s.atLeast < YEAR_START || s.atLeast > YEAR_END) error(W, `"atLeast" must be a year ${YEAR_START}-${YEAR_END}`);
           const placeBefore = lesson.steps.slice(0, i).some((p) => p.type === "do" && p.action === "place");
           if (!placeBefore) error(W, "the year slider only appears after a data center is placed; add a place step before this");
-        } else error(W, `"action" must be "place" or "year"`);
+        } else if (s.action === "abatement") {
+          const placeBefore = lesson.steps.slice(0, i).some((p) => p.type === "do" && p.action === "place");
+          if (!placeBefore) error(W, "the tax break slider only appears after a data center is placed; add a place step before this");
+        } else error(W, `"action" must be "place", "year" or "abatement"`);
         break;
       case "check": {
         const pi = lesson.steps.findIndex((p) => p.type === "predict" && p.id === s.prediction);

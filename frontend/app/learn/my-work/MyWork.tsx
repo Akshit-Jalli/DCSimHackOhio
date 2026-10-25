@@ -19,7 +19,8 @@ function itemsFor(lesson: Lesson, band: Band, answers: Record<string, string>, n
   const steps = lesson.steps.filter((s) => !s.bands || s.bands.includes(band));
   const place = steps.find((s) => s.type === "do" && s.action === "place");
   const presetId = place?.type === "do" && place.action === "place" ? place.preset ?? "enterprise" : "enterprise";
-  const vars = { name, ...factVars(factsFor(PRESETS.find((p) => p.id === presetId)?.mw ?? 60, lesson)) };
+  const preset = PRESETS.find((p) => p.id === presetId) ?? PRESETS[0];
+  const vars = { name, ...factVars(factsFor(preset.mw, preset.tiles * preset.tiles * 20, lesson), lesson) };
   const t = (x: Text) => fill(textFor(x, band), vars).replace(/\*\*/g, "");
   const choiceText = (choices: Choice[] | undefined, id: string | undefined) => {
     const i = choices?.findIndex((c) => c.id === id) ?? -1;

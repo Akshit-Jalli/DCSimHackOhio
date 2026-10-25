@@ -25,11 +25,13 @@ export function textFor(t: Text | undefined, band: Band): string {
 
 export type Mood = "happy" | "thinking" | "wow";
 
-// Numbers worked out from the data center's size (see facts.ts). Text can use them as {mw}, {mwh}, {homes}.
+// Numbers worked out from the data center's size (see facts.ts). Text can use them as {mw}, {mwh}, {homes},
+// {acres}, {fields}, plus any fact in the lesson's "facts" by its key.
 export type FactKey = "mw" | "mwh" | "homes";
 
 // Every step: who sees it (default everyone) and the guide's face
-type Common = { bands?: Band[]; mood?: Mood };
+// cite: keys of the lesson's "facts" this step uses; their sources show under the text
+type Common = { bands?: Band[]; mood?: Mood; cite?: string[] };
 
 // The guide says something. Optional camera move and pin highlight while talking.
 export type TalkStep = Common & { type: "talk"; text: Text; fly?: FlyTarget; landmark?: LandmarkKind };
@@ -56,6 +58,7 @@ export type DoStep = Common & {
   text: Text;
   doneText?: Text; // shown once it's done (default "Nice work! ✅")
   fly?: FlyTarget;
+  highlight?: string; // impacts panel row to point at while doing it
 } & (
     | {
         action: "place"; // drop a data center on the map
@@ -63,6 +66,7 @@ export type DoStep = Common & {
         suggest?: { x: number; z: number; bands?: Band[] }; // glowing "Build here!" spot (default for K-2 and 3-5)
       }
     | { action: "year"; atLeast: number } // move the year slider to this year or later
+    | { action: "abatement" } // move the property tax break slider (any change counts)
   );
 
 // Compare a prediction to the answer
@@ -108,6 +112,8 @@ export type Lesson = {
   startYear?: number;
   showImpacts?: Band[]; // bands that see the numbers panel once something is placed (default 6-8, 9-12)
   // Numbers used by the facts, each with its source
-  facts?: { homeMWhPerYear?: { value: number; source: string } };
+  // Every outside number with its source. Use in text as {key}. Special keys:
+  // homeMWhPerYear (needed for {homes}) and footballFieldAcres (needed for {fields}).
+  facts?: Record<string, { value: number | string; source: string }>;
   steps: Step[];
 };

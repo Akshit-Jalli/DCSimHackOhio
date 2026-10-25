@@ -7,7 +7,7 @@ Lessons are JSON files. You don't need to touch any code.
 3. Run `npm run check-lessons` (in `frontend/`) and fix anything marked ✗.
 4. Open http://localhost:3000/learn/<module id>?band=K-2 (try each band).
 
-A module shows "Coming soon" on the map until its lesson file exists. Each module unlocks when the one before it is finished.
+A module shows "Coming soon" on the map until its lesson file exists. A built module unlocks once every built module before it is finished ("Coming soon" ones don't block). For demos, open `/learn?demo=1`: all built modules stay open for that browser session.
 
 ## Grade bands and text
 
@@ -19,7 +19,7 @@ Bands: `"K-2"`, `"3-5"`, `"6-8"`, `"9-12"`. Any text can be one string for every
 
 - A missing band uses the nearest band's text (younger first). `check-lessons` warns about it.
 - `**word**` shows the word bold in blue. Use it for key words.
-- Placeholders: `{name}` (student's first name), `{guide}`, `{mw}`, `{mwh}`, `{homes}`, `{homeMWh}`. In a check step also `{choice}` (what they picked).
+- Placeholders: `{name}` (student's first name), `{guide}`, `{mw}`, `{mwh}`, `{homes}`, `{homeMWh}`, `{acres}`, `{fields}`, and any key in the lesson's `facts`. In a check step also `{choice}` (what they picked).
 - Keep it short: about 130 characters for K-2, 240 for 9-12. The bubble gets crowded after that.
 - Any step can have `"bands": ["6-8", "9-12"]` to show it only to those bands.
 - Any step can have `"mood": "happy" | "thinking" | "wow"` for the guide's face.
@@ -27,8 +27,9 @@ Bands: `"K-2"`, `"3-5"`, `"6-8"`, `"9-12"`. Any text can be one string for every
 ## Numbers: only use facts you can source
 
 - `{mw}`, `{mwh}` and `{homes}` are worked out from the data center's size (`{homes}` assumes full power all year; say so for 6-8 and 9-12).
-- The electricity a home uses comes from the lesson's `facts.homeMWhPerYear` (`value` in MWh per year plus a `source`). The source is shown to students.
-- Numbers in the impacts panel come from our model, which isn't the real engine yet. Call them **rough estimates** in lesson text.
+- Every outside number goes in the lesson's `facts` with a `value` and a `source`, and is used in text as `{key}`. Add `"cite": ["key"]` to the step so the source shows under the text.
+- Special facts: `homeMWhPerYear` (needed for `{homes}`) and `footballFieldAcres` (needed for `{fields}`). `{acres}` is the lot size of the preset (1 tile = 20 acres).
+- Numbers in the impacts panel come from our model, which isn't the real engine yet. Call them **rough estimates** in lesson text. A highlighted panel number also gets a "rough estimate" tag automatically.
 
 ## Lesson file
 
@@ -37,7 +38,10 @@ Bands: `"K-2"`, `"3-5"`, `"6-8"`, `"9-12"`. Any text can be one string for every
   "id": "module-1",
   "title": "What is a data center?",
   "startYear": 2026,
-  "facts": { "homeMWhPerYear": { "value": 10.791, "source": "U.S. EIA, 2022 average home" } },
+  "facts": {
+    "homeMWhPerYear": { "value": 10.791, "source": "U.S. EIA, 2022 average home" },
+    "conversationDba": { "value": "60 to 70", "source": "CDC, What Noises Cause Hearing Loss?" }
+  },
   "steps": [ ... ]
 }
 ```
@@ -74,7 +78,9 @@ The lesson always takes place in Wilmington, Ohio.
 ```
 - `preset`: `"enterprise"` (60 MW), `"hyperscale"` (250 MW) or `"ai"` (1,000 MW).
 - `suggest`: a glowing "Build here!" spot (moved to the nearest buildable lot). Shown to K-2 and 3-5 unless you add `"bands"` inside it.
-- The year step needs a place step before it.
+- `{ "type": "do", "action": "abatement", "highlight": "money.per_student", ... }`: shows only the property tax break slider; any change counts as done.
+- Any do step can `highlight` an impacts panel row.
+- The year and abatement steps need a place step before them.
 
 **check**: compare a prediction to the answer.
 ```json

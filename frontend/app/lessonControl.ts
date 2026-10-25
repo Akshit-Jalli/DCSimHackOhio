@@ -27,7 +27,7 @@ export type LessonControl = {
   presets?: string[]; // data centers the student may place ([] = no build menu); default all
   showYear?: boolean; // year slider (only appears once something is placed); default true
   showImpacts?: boolean; // impacts panel; default true
-  showSettings?: boolean; // settings panel; default true
+  showSettings?: boolean | "abatement"; // settings panel; "abatement" = only the property tax break; default true
   startYear?: number;
   highlightMetric?: string | null; // impacts row key, see app/metricKeys.ts
   highlightLandmark?: LandmarkKind | null; // pin gets bigger, shows its name, pulses
@@ -40,5 +40,6 @@ export type SceneEvent =
   | { type: "placed"; preset: string; mw: number; x: number; z: number } // student dropped a data center
   | { type: "removed" }
   | { type: "year"; year: number }
+  | { type: "abatement"; pct: number } // property tax break changed (0-100)
   | { type: "results"; year: number; result: YearResult | null } // numbers for the year on screen
   | { type: "flown" }; // camera finished a flight

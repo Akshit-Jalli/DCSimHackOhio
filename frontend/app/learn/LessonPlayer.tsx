@@ -36,6 +36,8 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
   // What the student has done in the 3D scene (from Scene events)
   const [placed, setPlaced] = useState<{ preset: string; mw: number } | null>(null);
   const [year, setYear] = useState(lesson.startYear ?? 2031);
+  // Property tax break: the first value seen, and whether the student has moved it since
+  const [abatement, setAbatement] = useState<{ start: number | null; changed: boolean }>({ start: null, changed: false });
   const [bottomSpace, setBottomSpace] = useState(0); // height of the build menu / year bar
   const [finished, setFinished] = useState(false);
 
@@ -78,8 +80,9 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
   // Facts from the data center's size: the placed one, or the one the lesson will ask for
   const placeStep = steps.find((s) => s.type === "do" && s.action === "place");
   const lessonPreset = placeStep && placeStep.type === "do" && placeStep.action === "place" ? placeStep.preset ?? "enterprise" : "enterprise";
-  const facts = factsFor(placed?.mw ?? PRESETS.find((p) => p.id === lessonPreset)?.mw ?? 60, lesson);
-  const vars = { name: profile?.name ?? "", guide: guide.name, ...factVars(facts) };
+  const preset = PRESETS.find((p) => p.id === (placed?.preset ?? lessonPreset)) ?? PRESETS[0];
+  const facts = factsFor(placed?.mw ?? preset.mw, preset.tiles * preset.tiles * 20, lesson); // 1 tile = 20 acres
+  const vars = { name: profile?.name ?? "", guide: guide.name, ...factVars(facts, lesson) };
   const t = (x: Parameters<typeof textFor>[0]) => fill(textFor(x, band), vars);
 
   // Is this step finished (so Next works)?
@@ -88,7 +91,9 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
       case "predict":
         return !!answers[step.id];
       case "do":
-        return step.action === "place" ? !!placed : !!placed && year >= step.atLeast;
+        if (step.action === "place") return !!placed;
+        if (step.action === "year") return !!placed && year >= step.atLeast;
+        return abatement.changed;
       case "reflect":
         return step.kind === "vote" ? !!answers[step.id] : (answers[step.id] ?? "").trim().length >= 3;
       default:
@@ -152,19 +157,20 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
   const yearShown = steps.slice(0, index + 1).some((s) => s.type === "do" && s.action === "year");
   const control: LessonControl = useMemo(() => {
     const isPlace = step.type === "do" && step.action === "place";
+    const isAbatement = step.type === "do" && step.action === "abatement";
     const suggest = isPlace && step.suggest && (step.suggest.bands ?? ["K-2", "3-5"]).includes(band) ? step.suggest : null;
     const preset = isPlace ? PRESETS.find((p) => p.id === (step.preset ?? "enterprise")) : undefined;
     let fly: FlyTarget | undefined = step.type === "look" ? step.target : step.type === "talk" || step.type === "do" ? step.fly : undefined;
     if (!fly && suggest) fly = "datacenter"; // before placing, this looks at the suggested spot
     const landmark = (step.type === "talk" || step.type === "look" ? step.landmark : undefined) ?? (step.type === "look" && typeof step.target === "string" && PIN_KINDS.includes(step.target) ? step.target : undefined);
-    const highlight = step.type === "look" ? step.highlight ?? null : null;
+    const highlight = step.type === "look" || step.type === "do" ? step.highlight ?? null : null;
     return {
       fly: fly ? { id: visit, target: fly } : undefined,
       lockCamera: step.type === "look" ? step.lockCamera : false,
       presets: isPlace ? [preset?.id ?? "enterprise"] : [],
       showYear: yearShown,
       showImpacts: (lesson.showImpacts ?? ["6-8", "9-12"]).includes(band) || !!highlight,
-      showSettings: false,
+      showSettings: isAbatement ? "abatement" : false,
       startYear: lesson.startYear,
       highlightMetric: highlight,
       highlightLandmark: (landmark as LessonControl["highlightLandmark"]) ?? null,
@@ -174,6 +180,7 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
         else if (e.type === "placed") setPlaced({ preset: e.preset, mw: e.mw });
         else if (e.type === "removed") setPlaced(null);
         else if (e.type === "year") setYear(e.year);
+        else if (e.type === "abatement") setAbatement((a) => (a.start == null ? { start: e.pct, changed: false } : { start: a.start, changed: a.changed || e.pct !== a.start }));
       },
     };
   }, [step, visit, lesson.startYear, lesson.showImpacts, band, yearShown]);
@@ -266,6 +273,15 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
                     placeholder={step.placeholder ? t(step.placeholder) : "Type your answer…"}
                     style={{ width: "100%", boxSizing: "border-box", fontFamily: FONT, fontSize: 19, fontWeight: 600, color: INK, padding: "12px 14px", borderRadius: 16, border: "3px solid #90caf9", outline: "none", resize: "vertical" }}
                   />
+                )}
+
+                {/* Where this step's numbers come from */}
+                {step.cite && step.cite.length > 0 && (
+                  <div style={{ width: 0, minWidth: "100%", fontSize: 13, lineHeight: 1.35, color: "#5f6b76", fontWeight: 600 }}>
+                    {step.cite.map((k) => (
+                      <div key={k}>📚 Source: {lesson.facts?.[k]?.source}</div>
+                    ))}
+                  </div>
                 )}
 
                 {/* Read aloud, step count, Back / Next */}

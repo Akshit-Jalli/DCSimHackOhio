@@ -502,6 +502,10 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
   useEffect(() => {
     onEvent.current?.({ type: "year", year });
   }, [year]);
+  const abatement = settings?.abatementPct;
+  useEffect(() => {
+    if (abatement != null) onEvent.current?.({ type: "abatement", pct: abatement });
+  }, [abatement]);
   useEffect(() => {
     onEvent.current?.({ type: "results", year, result: placed ? r : null });
   }, [year, r, placed]);
@@ -731,12 +735,13 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
           otherTown={town.slug !== "wilmington-oh"}
           highlight={lesson?.highlightMetric}
           note={lesson ? "Rough estimates: the real model isn't connected yet." : undefined}
+          tag={lesson ? "rough estimate" : undefined}
         />
       )}
 
       {/* Right: settings */}
       {placed && settings && preset && (lesson?.showSettings ?? true) && (
-        <SettingsPanel preset={preset} settings={settings} onChange={setSettings} onRemove={remove} />
+        <SettingsPanel preset={preset} settings={settings} onChange={setSettings} onRemove={remove} only={lesson?.showSettings === "abatement" ? "abatement" : undefined} />
       )}
 
       {/* Bottom: year slider and build menu */}

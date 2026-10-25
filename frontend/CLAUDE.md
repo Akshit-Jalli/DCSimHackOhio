@@ -47,6 +47,9 @@ Pivot: K-12 ed tech. No accounts; everything stays in the browser.
 - `/learn/<module>`: lesson player on top of the 3D scene, always Wilmington. Step types: talk, look, predict, do (place / year), check, reflect (vote / short). Read-aloud uses on-device voices only (auto for K-2).
 - `/learn/build`: Free Build in kid mode (only ready towns, no town search or area picker). `/simulate` is unchanged.
 - Content is data: `content/modules.json`, `content/guides.json`, `content/lessons/<id>.json`. How to write lessons: `content/README.md`. Run `npm run check-lessons` after editing.
+- Built: Module 1 (What is a data center?) and Module 6 (You decide: town council capstone, Hyperscale, 5 pretend residents, tax-break step for 6-12). Next in order: Water, Power & bills, Money & schools, Noise & land.
+- Unlocking: a built module opens once every built module before it is done ("Coming soon" ones don't block). `/learn?demo=1` opens all built modules for the browser session (sessionStorage `neighbor-demo`).
+- Facts: every outside number lives in the lesson's `facts` with a source; steps `cite` them and the source shows under the bubble. Highlighted panel numbers get a "rough estimate" tag in lessons.
 - Numbers rule: lesson facts are only worked out from the data center's size (`app/learn/facts.ts`, homes assume full power all year) with the per-home figure and its source in the lesson file. Anything from the fake engine is labeled "rough estimate"; pin badges are off in lessons.
 - Scene control: `app/lessonControl.ts` (camera fly targets, lock camera, allowed presets, panels, highlights, "Build here!" suggestion, events back to the lesson). Without a `lesson` prop Scene is the normal simulator.
 - Progress: `app/learn/progress.ts`, one localStorage key `dcsim-learn-v1` (memory fallback if storage is blocked).

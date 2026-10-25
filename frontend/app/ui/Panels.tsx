@@ -127,15 +127,42 @@ export function SettingsPanel({
   settings,
   onChange,
   onRemove,
+  only,
 }: {
   preset: Preset;
   settings: Settings;
   onChange: (s: Settings) => void;
   onRemove: () => void;
+  only?: "abatement"; // lessons: show just the property tax break
 }) {
   const maxMW = Math.round((preset.mw * 1.5) / 10) * 10;
   const field: CSSProperties = { marginBottom: 14 };
   const select: CSSProperties = { width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #cfd8dc", background: "white" };
+
+  if (only === "abatement") {
+    return (
+      <div style={{ ...panel, top: 190, right: 16, width: 280, padding: 18 }}>
+        <div style={{ fontSize: 13, color: "#607d8b" }}>Tax deal for the {preset.name} data center</div>
+        <div style={{ fontSize: 17, fontWeight: 800, margin: "4px 0 10px" }}>
+          Property tax break: <span style={{ color: "#1565c0" }}>{settings.abatementPct}%</span>
+        </div>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={settings.abatementPct}
+          aria-label="Property tax break percent"
+          onChange={(e) => onChange({ ...settings, abatementPct: Number(e.target.value) })}
+          style={{ width: "100%", height: 28 }}
+        />
+        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#607d8b" }}>
+          <span>0% (pays full tax)</span>
+          <span>100% (pays none)</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ ...panel, top: 190, right: 16, width: 260, padding: 16 }}>
@@ -258,6 +285,15 @@ function Sparkline({ series, index, color }: { series: number[]; index: number; 
 
 type Getter = (r: YearResult) => number;
 
+// Small orange label stuck to a number, so a model number is never mistaken for a sourced fact
+function EstimateTag({ text }: { text: string }) {
+  return (
+    <span style={{ display: "block", fontSize: 10, fontWeight: 800, color: "#e65100", background: "#fff3e0", border: "1px solid #ffb74d", borderRadius: 6, padding: "0 5px", marginTop: 2, textTransform: "uppercase", letterSpacing: 0.3 }}>
+      {text}
+    </span>
+  );
+}
+
 // Style for a row a lesson is pointing at
 function rowStyle(on: boolean): CSSProperties {
   return on
@@ -277,6 +313,7 @@ function useScrollWhen(on: boolean) {
 function Row({
   k,
   hl,
+  tag,
   label,
   get,
   format,
@@ -286,6 +323,7 @@ function Row({
 }: {
   k: string; // key a lesson uses to highlight this row (app/metricKeys.ts)
   hl?: string | null;
+  tag?: string; // small label on the number while highlighted, e.g. "rough estimate"
   label: string;
   get: Getter;
   format: (n: number) => string;
@@ -302,6 +340,7 @@ function Row({
       <Sparkline series={series} index={index} color={color} />
       <span style={{ fontWeight: 700, whiteSpace: "nowrap", minWidth: 74, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
         <AnimatedNumber value={series[index] ?? 0} format={format} />
+        {on && tag && <EstimateTag text={tag} />}
       </span>
     </div>
   );
@@ -331,6 +370,7 @@ export function ImpactsPanel({
   otherTown,
   highlight,
   note,
+  tag,
 }: {
   results: YearResult[];
   year: number;
@@ -338,10 +378,11 @@ export function ImpactsPanel({
   otherTown: boolean; // fake engine only knows Wilmington's water/schools/taxes
   highlight?: string | null; // a row key from app/metricKeys.ts to point at (lessons)
   note?: string; // replaces the "Demo numbers" line
+  tag?: string; // label shown on the highlighted number (lessons: "rough estimate")
 }) {
   const index = Math.max(0, results.findIndex((x) => x.year === year));
   const r = results[index];
-  const rowProps = { results, index, hl: highlight };
+  const rowProps = { results, index, hl: highlight, tag };
   const loudRef = useScrollWhen(highlight === "noise.loud_zone");
   return (
     <div style={{ ...panel, top: 78, left: 16, width: 330, padding: 16, maxHeight: "calc(100vh - 240px)", overflowY: "auto" }}>
@@ -380,8 +421,9 @@ export function ImpactsPanel({
         <Row {...rowProps} k="noise.nearest_home" color="#e53935" label="At the nearest home" get={G.noise} format={(n) => `${fmt(n)} dBA`} />
         <div ref={loudRef} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, ...rowStyle(highlight === "noise.loud_zone") }}>
           <span style={{ color: "#546e7a" }}>Buildings in the loud zone</span>
-          <span style={{ fontWeight: 700 }}>
+          <span style={{ fontWeight: 700, textAlign: "right" }}>
             <AnimatedNumber value={homesInZone} format={(n) => fmt(Math.round(n))} />
+            {highlight === "noise.loud_zone" && tag && <EstimateTag text={tag} />}
           </span>
         </div>
       </Section>

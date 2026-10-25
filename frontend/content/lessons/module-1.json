@@ -6,6 +6,10 @@
     "homeMWhPerYear": {
       "value": 10.791,
       "source": "U.S. Energy Information Administration: the average U.S. home used 10,791 kWh of electricity in 2022 (eia.gov/tools/faqs/faq.php?id=97)"
+    },
+    "footballFieldAcres": {
+      "value": 1.322,
+      "source": "NFL Rulebook, Rule 1: a field with end zones is 360 × 160 feet = 57,600 square feet; 1 acre = 43,560 square feet"
     }
   },
   "steps": [
@@ -30,9 +34,33 @@
         "9-12": "Companies want to build **data centers** in towns like this. What fills most of the building?"
       },
       "choices": [
-        { "id": "a", "text": { "K-2": "Lots of computers", "3-5": "Thousands of computers", "6-8": "Rows of computer servers", "9-12": "Racks of servers" } },
-        { "id": "b", "text": { "K-2": "Lots of cows", "3-5": "Shelves of things to sell", "6-8": "Warehouse shelves of products", "9-12": "Warehouse inventory" } },
-        { "id": "c", "text": { "K-2": "Lots of books", "3-5": "Offices for workers", "6-8": "Offices full of workers", "9-12": "Office space" } }
+        {
+          "id": "a",
+          "text": {
+            "K-2": "Lots of computers",
+            "3-5": "Thousands of computers",
+            "6-8": "Rows of computer servers",
+            "9-12": "Racks of servers"
+          }
+        },
+        {
+          "id": "b",
+          "text": {
+            "K-2": "Lots of cows",
+            "3-5": "Shelves of things to sell",
+            "6-8": "Warehouse shelves of products",
+            "9-12": "Warehouse inventory"
+          }
+        },
+        {
+          "id": "c",
+          "text": {
+            "K-2": "Lots of books",
+            "3-5": "Offices for workers",
+            "6-8": "Offices full of workers",
+            "9-12": "Office space"
+          }
+        }
       ]
     },
     {
@@ -68,7 +96,10 @@
       "type": "do",
       "action": "place",
       "preset": "enterprise",
-      "suggest": { "x": -1200, "z": 2800 },
+      "suggest": {
+        "x": -1200,
+        "z": 2800
+      },
       "text": {
         "K-2": "Let's build one! Drag the **Enterprise** card onto the glowing square.",
         "3-5": "Let's build one! Drag the **Enterprise** card onto the glowing square.",
@@ -77,10 +108,13 @@
       },
       "doneText": {
         "K-2": "You built a data center! 🎉",
-        "3-5": "You built it! It covers 80 acres, about as big as 60 football fields.",
-        "6-8": "Placed! The site is 80 acres, about 60 football fields.",
-        "9-12": "Placed. The site is 80 acres, about 60 football fields."
-      }
+        "3-5": "You built it! It covers {acres} acres, about as big as {fields} football fields.",
+        "6-8": "Placed! The site is {acres} acres, about {fields} football fields.",
+        "9-12": "Placed. The site is {acres} acres, about {fields} football fields."
+      },
+      "cite": [
+        "footballFieldAcres"
+      ]
     },
     {
       "type": "look",
@@ -103,9 +137,33 @@
         "9-12": "At **{mw} MW**, running at full power all year, it uses {mwh} MWh. About how many homes use that much?"
       },
       "choices": [
-        { "id": "a", "text": { "K-2": "A few houses 🏠", "3-5": "About 50 homes", "6-8": "About 50 homes", "9-12": "About 50 homes" } },
-        { "id": "b", "text": { "K-2": "A street of houses 🏘️", "3-5": "About 5,000 homes", "6-8": "About 5,000 homes", "9-12": "About 5,000 homes" } },
-        { "id": "c", "text": { "K-2": "A whole city of houses 🏙️", "3-5": "About 50,000 homes", "6-8": "About 50,000 homes", "9-12": "About 50,000 homes" } }
+        {
+          "id": "a",
+          "text": {
+            "K-2": "A few houses 🏠",
+            "3-5": "About 50 homes",
+            "6-8": "About 50 homes",
+            "9-12": "About 50 homes"
+          }
+        },
+        {
+          "id": "b",
+          "text": {
+            "K-2": "A street of houses 🏘️",
+            "3-5": "About 5,000 homes",
+            "6-8": "About 5,000 homes",
+            "9-12": "About 5,000 homes"
+          }
+        },
+        {
+          "id": "c",
+          "text": {
+            "K-2": "A whole city of houses 🏙️",
+            "3-5": "About 50,000 homes",
+            "6-8": "About 50,000 homes",
+            "9-12": "About 50,000 homes"
+          }
+        }
       ]
     },
     {
@@ -160,7 +218,10 @@
       "type": "look",
       "target": "datacenter",
       "highlight": "power.homes",
-      "bands": ["6-8", "9-12"],
+      "bands": [
+        "6-8",
+        "9-12"
+      ],
       "text": {
         "6-8": "The numbers panel shows our model's **rough estimate**. It's close to our math but not the same: real data centers don't always run at full power, and cooling uses extra electricity.",
         "9-12": "The panel shows our model's **rough estimate**. It differs from our full-power math because real sites don't run at 100% and cooling adds load."
@@ -169,7 +230,10 @@
     {
       "type": "look",
       "target": "water_tower",
-      "bands": ["K-2", "3-5"],
+      "bands": [
+        "K-2",
+        "3-5"
+      ],
       "text": {
         "K-2": "Some data centers use **water** to cool their computers. Towns need water too!",
         "3-5": "Some data centers cool their computers with **water**. Towns have to make sure there's enough for everyone."
@@ -179,7 +243,10 @@
       "type": "look",
       "target": "water_tower",
       "highlight": "water.daily",
-      "bands": ["6-8", "9-12"],
+      "bands": [
+        "6-8",
+        "9-12"
+      ],
       "text": {
         "6-8": "Some data centers cool with **water**, others mostly with air. The panel's water number is a **rough estimate**.",
         "9-12": "Cooling can use air or **water**. Water-cooled sites can draw heavily on a town's supply. The panel's figure is a **rough estimate**."
@@ -200,22 +267,37 @@
       "type": "reflect",
       "id": "want",
       "kind": "vote",
-      "bands": ["K-2", "3-5"],
+      "bands": [
+        "K-2",
+        "3-5"
+      ],
       "text": {
         "K-2": "Would you want a **data center** in your town?",
         "3-5": "Now you know a little more. Would you want a **data center** in your town?"
       },
       "choices": [
-        { "id": "yes", "text": "Yes 👍" },
-        { "id": "no", "text": "No 👎" },
-        { "id": "unsure", "text": "Not sure 🤔" }
+        {
+          "id": "yes",
+          "text": "Yes 👍"
+        },
+        {
+          "id": "no",
+          "text": "No 👎"
+        },
+        {
+          "id": "unsure",
+          "text": "Not sure 🤔"
+        }
       ]
     },
     {
       "type": "reflect",
       "id": "tradeoff",
       "kind": "short",
-      "bands": ["6-8", "9-12"],
+      "bands": [
+        "6-8",
+        "9-12"
+      ],
       "text": {
         "6-8": "Name one **good thing** and one **worry** about building it here.",
         "9-12": "Would you support this site? Give one **benefit** and one **cost**, using a number from this lesson."
