@@ -212,6 +212,26 @@ function snap(v: number, tiles: number) {
   return i * TILE;
 }
 
+// Glowing, pulsing square where a lesson suggests building
+function SuggestLot({ x, z, size }: { x: number; z: number; size: number }) {
+  const mat = useRef<THREE.MeshBasicMaterial>(null);
+  useFrame(({ clock }) => {
+    if (mat.current) mat.current.opacity = 0.25 + 0.2 * Math.sin(clock.elapsedTime * 3);
+  });
+  return (
+    <group position={[x, 4, z]} rotation={[-Math.PI / 2, 0, 0]}>
+      <mesh>
+        <planeGeometry args={[size, size]} />
+        <meshBasicMaterial ref={mat} color="#ffca28" transparent opacity={0.35} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, 0, 0.5]}>
+        <ringGeometry args={[size * 0.68, size * 0.72, 4, 1, Math.PI / 4]} />
+        <meshBasicMaterial color="#ff8f00" />
+      </mesh>
+    </group>
+  );
+}
+
 // A camera view: where the camera sits and what it looks at
 type View = { pos: THREE.Vector3; target: THREE.Vector3 };
 const HOME: View = { pos: HOME_POS, target: HOME_TARGET };
@@ -338,18 +358,19 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
   }, [playing]);
 
   // Can we build here? Every tile under the lot must be clear of town and water
-  const valid = useMemo(() => {
-    if (!pos || !counts || !landBlocked) return true;
-    const ix0 = Math.round((pos[0] - lotSize / 2 + MAP_HALF) / TILE);
-    const iz0 = Math.round((pos[1] - lotSize / 2 + MAP_HALF) / TILE);
-    for (let iz = iz0; iz < iz0 + tiles; iz++) {
-      for (let ix = ix0; ix < ix0 + tiles; ix++) {
+  function lotClear(p: [number, number], n: number) {
+    if (!counts || !landBlocked) return true;
+    const ix0 = Math.round((p[0] - (n * TILE) / 2 + MAP_HALF) / TILE);
+    const iz0 = Math.round((p[1] - (n * TILE) / 2 + MAP_HALF) / TILE);
+    for (let iz = iz0; iz < iz0 + n; iz++) {
+      for (let ix = ix0; ix < ix0 + n; ix++) {
         const t = iz * GRID + ix;
         if (landBlocked[t] || counts[t] >= MAX_BUILDINGS_PER_TILE) return false;
       }
     }
     return true;
-  }, [pos, counts, landBlocked, tiles, lotSize]);
+  }
+  const valid = !pos || lotClear(pos, tiles);
 
   // Distance from the lot edge to the nearest building
   const nearestResidenceM = useMemo(() => {
@@ -485,6 +506,26 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
     onEvent.current?.({ type: "results", year, result: placed ? r : null });
   }, [year, r, placed]);
 
+  // "Build here": the nearest buildable lot to the point the lesson suggests (hidden once placed)
+  const suggestAt = lesson?.suggest;
+  const suggestion = useMemo(() => {
+    if (!suggestAt || !counts || !landBlocked) return null;
+    const { x, z, tiles: n } = suggestAt;
+    for (let r = 0; r <= 14; r++) {
+      for (let dz = -r; dz <= r; dz++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (Math.max(Math.abs(dx), Math.abs(dz)) !== r) continue; // ring at distance r only
+          const p: [number, number] = [snap(x + dx * TILE, n), snap(z + dz * TILE, n)];
+          if (lotClear(p, n)) return { x: p[0], z: p[1], size: n * TILE };
+        }
+      }
+    }
+    return null;
+    // lotClear only reads counts/landBlocked
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestAt?.x, suggestAt?.z, suggestAt?.tiles, counts, landBlocked]);
+  const showSuggestion = suggestion && !(settings && pos);
+
   // Nearest pin of a kind to the data center (or to the map center)
   function nearestLabel(kind: string) {
     const [px, pz] = pos ?? [0, 0];
@@ -500,7 +541,11 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
     if (target === "home") return HOME;
     if (typeof target === "object") return viewOf(target.x, target.z, target.dist ?? 900);
     const [px, pz] = pos ?? [0, 0];
-    if (target === "datacenter") return viewOf(px, pz, lotSize * 1.6 + 400);
+    if (target === "datacenter") {
+      // Aim a bit in front (south) so the lot sits above the lesson's speech bubble
+      if (!pos && suggestion) return viewOf(suggestion.x, suggestion.z + suggestion.size * 0.5, suggestion.size * 1.6 + 600);
+      return viewOf(px, pz + lotSize * 0.5, lotSize * 1.6 + 400);
+    }
     if (target === "loudzone") return viewOf(px, pz, Math.max(1500, noiseRadius * 2.8));
     const l = nearestLabel(target);
     return l ? viewOf(l.x, l.z, 700) : HOME;
@@ -519,7 +564,10 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
 
   // The pin a lesson points at gets highlighted
   const focusId = lesson?.highlightLandmark ? nearestLabel(lesson.highlightLandmark)?.id : undefined;
-  const shownLabels = focusId ? labels.map((l) => (l.id === focusId ? { ...l, highlight: true } : l)) : labels;
+  const pinLabels = focusId ? labels.map((l) => (l.id === focusId ? { ...l, highlight: true } : l)) : labels;
+  const shownLabels: Label[] = showSuggestion
+    ? [...pinLabels, { id: "suggest", x: suggestion.x, y: 60, z: suggestion.z, icon: "🏗️", name: "Build here!", badge: null, highlight: true }]
+    : pinLabels;
   const canBuild = !lesson?.presets || lesson.presets.length > 0;
 
   return (
@@ -588,6 +636,8 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
         <LabelProjector />
 
         {/* The data center */}
+        {showSuggestion && <SuggestLot x={suggestion.x} z={suggestion.z} size={suggestion.size} />}
+
         {settings && pos && (
           <DataCenter
             pos={pos}
@@ -690,7 +740,8 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
       )}
 
       {/* Bottom: year slider and build menu */}
-      <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 10 }}>
+      {/* id: lessons measure this to keep the speech bubble above it */}
+      <div id="dc-bottom-controls" style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 10 }}>
         {placed && (lesson?.showYear ?? true) && <YearBar year={year} setYear={setYear} playing={playing} setPlaying={setPlaying} activeMW={running} />}
         {canBuild && <BuildMenu activeId={settings?.presetId ?? null} onStartDrag={startFromMenu} only={lesson?.presets} />}
       </div>

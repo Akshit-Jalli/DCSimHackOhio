@@ -81,6 +81,14 @@ export function updateModule(id: string, patch: Partial<ModuleProgress>) {
   saveProfile({ ...p, modules: { ...p.modules, [id]: { ...prev, ...patch } } });
 }
 
+// A prediction, vote or short answer (shown later on the "My work" page)
+export function saveAnswer(moduleId: string, key: string, value: string) {
+  const p = snapshot();
+  if (!p) return;
+  const prev = p.modules[moduleId] ?? { step: 0, done: false };
+  updateModule(moduleId, { answers: { ...prev.answers, [key]: value.slice(0, 500) } });
+}
+
 // Keep only a sensible first name: trimmed, single spaces, max 20 characters
 export function cleanName(raw: string) {
   return raw.replace(/\s+/g, " ").trim().slice(0, 20);

@@ -31,6 +31,7 @@ export type LessonControl = {
   startYear?: number;
   highlightMetric?: string | null; // impacts row key, see METRIC_KEYS in ui/Panels.tsx
   highlightLandmark?: LandmarkKind | null; // pin gets bigger, shows its name, pulses
+  suggest?: { x: number; z: number; tiles: number } | null; // glowing "Build here!" lot at the nearest buildable spot
   onEvent?: (e: SceneEvent) => void;
 };
 
