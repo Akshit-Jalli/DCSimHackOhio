@@ -155,6 +155,10 @@ export default function Agents({
     }
     m.instanceMatrix.needsUpdate = true;
     h.instanceMatrix.needsUpdate = true;
+    // Raycasts test the mesh's bounding sphere first, and three computes it once from
+    // whatever the instance matrices were at the first pointer event (sometimes all at the
+    // origin). Walkers move, so keep it current or clicks away from the origin miss.
+    h.computeBoundingSphere();
   });
 
   const pick = (e: ThreeEvent<MouseEvent>) => {

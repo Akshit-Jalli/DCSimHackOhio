@@ -27,18 +27,21 @@ function Choice({ left, right, rightColor, onClick }: { left: string; right: str
 // Town name in the header. Click it to search for another US town.
 // Search waits 600 ms after typing stops (Nominatim allows 1 request/second; the server also limits and caches).
 // "Ready" maps open right away (onOpen); search results go to the area picker (onPick).
+// kidMode (Free Build from /learn): only the ready towns, no typing, nothing sent to the search service.
 export function TownSearch({
   current,
   currentName,
   onPick,
   onOpen,
   onPickArea,
+  kidMode = false,
 }: {
   current: string; // shown in the header, e.g. "Athens, OH · 4.2 km NE"
   currentName: string; // "Athens"
   onPick: (t: TownPick) => void;
   onOpen: (t: Town) => void;
   onPickArea: () => void;
+  kidMode?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -125,21 +128,23 @@ export function TownSearch({
           {/* Click anywhere else to close */}
           <div onClick={close} style={{ position: "fixed", inset: 0, zIndex: 19 }} />
           <div style={{ ...panel, top: "calc(100% + 8px)", left: 0, width: 320, padding: 10, zIndex: 20 }}>
-            <input
-              autoFocus
-              value={q}
-              onChange={(e) => onType(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") close();
-                if (e.key === "Enter" && results?.[0]) pick(results[0]);
-                else if (e.key === "Enter" && ready[0]) openReady(ready[0]);
-              }}
-              placeholder="Type a US town, e.g. Athens, OH"
-              style={{ width: "100%", boxSizing: "border-box", border: "1px solid #cfd8dc", borderRadius: 8, padding: "8px 10px", fontSize: 14, outline: "none", background: "white", color: "#263238" }}
-            />
+            {!kidMode && (
+              <input
+                autoFocus
+                value={q}
+                onChange={(e) => onType(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") close();
+                  if (e.key === "Enter" && results?.[0]) pick(results[0]);
+                  else if (e.key === "Enter" && ready[0]) openReady(ready[0]);
+                }}
+                placeholder="Type a US town, e.g. Athens, OH"
+                style={{ width: "100%", boxSizing: "border-box", border: "1px solid #cfd8dc", borderRadius: 8, padding: "8px 10px", fontSize: 14, outline: "none", background: "white", color: "#263238" }}
+              />
+            )}
 
             <div style={{ maxHeight: 320, overflowY: "auto" }}>
-              {!text && (
+              {!text && !kidMode && (
                 <Choice
                   left={`📍 Pick another area of ${currentName}`}
                   right={null}
@@ -151,7 +156,7 @@ export function TownSearch({
               )}
               {ready.length > 0 && (
                 <>
-                  <div style={heading}>Ready (opens instantly)</div>
+                  <div style={heading}>{kidMode ? "Pick a town" : "Ready (opens instantly)"}</div>
                   {ready.map((t) => (
                     <Choice key={t.slug} left={label(t)} right={t.county} onClick={() => openReady(t)} />
                   ))}
@@ -177,7 +182,7 @@ export function TownSearch({
               {text.length > 0 && text.length < 3 && <div style={{ ...hint, paddingTop: 8 }}>Keep typing…</div>}
             </div>
             <div style={{ fontSize: 10, color: "#90a4ae", padding: "8px 8px 0" }}>
-              US towns only · New towns take ~15 s to download · © OpenStreetMap contributors, Overture Maps
+              {kidMode ? "" : "US towns only · New towns take ~15 s to download · "}© OpenStreetMap contributors, Overture Maps
             </div>
           </div>
         </>

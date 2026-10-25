@@ -111,7 +111,7 @@ export function ModuleMap({ profile, modules, guides, playable }: { profile: Pro
 
         {/* Free Build: always open */}
         <Link
-          href="/simulate"
+          href="/learn/build"
           style={{ display: "flex", alignItems: "center", gap: 18, marginTop: 8, background: "#fff", borderRadius: 26, padding: "18px 24px", textDecoration: "none", color: INK, boxShadow: "0 8px 24px rgba(20,60,100,0.15)", border: "3px solid #ffe082" }}
         >
           <span style={{ fontSize: 52 }}>🏗️</span>

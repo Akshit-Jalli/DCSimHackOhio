@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import type { LatLon, Town, TownPick } from "@/lib/towns";
 import { areaOffsetText, setTown, type TownInfo } from "./mapConfig";
 import { DEFAULT_TOWN, loadWilmington } from "./defaultTown";
@@ -23,7 +24,8 @@ type Download = { label: string; done: string[]; error: string | null };
 
 // Picks the town (from ?town=<slug>, the search box or the area picker), downloads it if needed, then shows the 3D scene.
 // Switching towns remounts the whole scene (key = slug) so nothing from the old town is left over.
-export default function TownApp() {
+// kidMode (Free Build from /learn): only towns that are already downloaded, no search, no area picker.
+export default function TownApp({ kidMode = false }: { kidMode?: boolean }) {
   const [town, setTownState] = useState<TownInfo | null>(null);
   const [download, setDownload] = useState<Download | null>(null);
   const [picking, setPicking] = useState<{ town: TownPick; start?: LatLon } | null>(null);
@@ -123,12 +125,21 @@ export default function TownApp() {
               onPick={(t) => setPicking({ town: t })}
               onOpen={openReady}
               onPickArea={pickArea}
+              kidMode={kidMode}
             />
           }
         />
       )}
-      {town && <Onboarding />}
-      {picking && (
+      {town && !kidMode && <Onboarding />}
+      {kidMode && town && (
+        <Link
+          href="/learn"
+          style={{ position: "fixed", top: 16, right: 16, zIndex: 20, background: "white", color: "#16191d", borderRadius: 16, padding: "14px 22px", fontWeight: 800, fontSize: 18, textDecoration: "none", boxShadow: "0 4px 14px rgba(20,40,60,0.2)", fontFamily: "var(--font-lesson), var(--font-geist-sans), system-ui, sans-serif" }}
+        >
+          ← Map
+        </Link>
+      )}
+      {picking && !kidMode && (
         <RegionPicker town={picking.town} start={picking.start} onGenerate={generate} onOpen={openReady} onCancel={() => setPicking(null)} />
       )}
       {download ? (
