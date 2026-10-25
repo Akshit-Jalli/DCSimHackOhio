@@ -5,6 +5,8 @@ import { PRESETS, YEAR_END, YEAR_START, type AdvancedCoef, type Preset, type Set
 import type { Cooling, WaterSource, YearResult } from "../sim/types";
 import { interpResult, interpSeries, monthLabel } from "../sim/interp";
 import coefficientsJson from "../../lib/data/coefficients.json";
+import { METRICS, SECTIONS, SECTION_ORDER, TIER, fmt, money, metricSeries, type MetricDef, type Tier, type ViewMode } from "./metrics";
+export type { ViewMode } from "./metrics";
 
 export const MONTHS_TOTAL = (YEAR_END - YEAR_START + 1) * 12;
 
@@ -26,18 +28,6 @@ export const panel: CSSProperties = {
 const label: CSSProperties = { fontSize: 12, color: "#607d8b", marginBottom: 4 };
 const hint: CSSProperties = { fontSize: 11, color: "#90a4ae", marginTop: 4, lineHeight: 1.35 };
 
-function fmt(n: number, digits = 0) {
-  if (!isFinite(n)) return "0";
-  const abs = Math.abs(n);
-  if (abs >= 1e9) return (n / 1e9).toFixed(1) + "B";
-  if (abs >= 1e6) return (n / 1e6).toFixed(1) + "M";
-  if (abs >= 1e4) return (n / 1e3).toFixed(0) + "k";
-  return n.toLocaleString(undefined, { maximumFractionDigits: digits });
-}
-
-function money(n: number) {
-  return (n < 0 ? "-$" : "$") + fmt(Math.abs(n));
-}
 
 // ---------------- Build menu (bottom bar) ----------------
 
@@ -388,15 +378,6 @@ function Sparkline({ series, t, color }: { series: number[]; t: number; color: s
   );
 }
 
-type Getter = (r: YearResult) => number;
-
-// How much to trust each number. Mirrors the onboarding's Solid / Estimated / Assumed.
-type Tier = "solid" | "estimated" | "assumed";
-const TIER: Record<Tier, { color: string; text: string }> = {
-  solid: { color: "#43a047", text: "Solid: physics, published data, or a deal term you set." },
-  estimated: { color: "#f9a825", text: "Estimated: from a national study or an independent audit, applied here." },
-  assumed: { color: "#e53935", text: "Assumed: our judgment. The range on this number is wide." },
-};
 function Dot({ tier }: { tier: Tier }) {
   return (
     <span
@@ -407,48 +388,20 @@ function Dot({ tier }: { tier: Tier }) {
   );
 }
 
-function cumulative(series: number[]): number[] {
-  let s = 0;
-  return series.map((v) => (s += v));
-}
-
-// "Per year" shows the rate in the current year. "Total so far" shows the running
-// sum through the current month — the long-term picture, which the rate hides.
-export type ViewMode = "year" | "total";
-type Total = { get: Getter; format: (n: number) => string; label: string };
-
-function Row({
-  label,
-  get,
-  format,
-  results,
-  t,
-  color,
-  tier,
-  total,
-  mode,
-}: {
-  label: string;
-  get: Getter;
-  format: (n: number) => string;
-  results: YearResult[];
-  t: number; // fractional index into results
-  color: string;
-  tier: Tier;
-  total?: Total; // if set, this row has a meaningful running total
-  mode: ViewMode;
-}) {
-  const yearSeries = useMemo(() => results.map(get), [results, get]);
-  const totalSeries = useMemo(() => (total ? cumulative(results.map(total.get)) : null), [results, total]);
-  const useTotal = mode === "total" && totalSeries !== null;
-  const series = useTotal && totalSeries ? totalSeries : yearSeries;
-  const fmtFn = useTotal && total ? total.format : format;
-  const text = useTotal && total ? total.label : label;
-  const now = mode === "total" && !total; // a stock, not a flow: same number in both modes
+// One metric row: trust dot, label, sparkline across all years, animated value at
+// the current month. In "total" mode flows show their running sum; stocks show
+// the current level and are marked "now".
+function Row({ def, results, t, mode }: { def: MetricDef; results: YearResult[]; t: number; mode: ViewMode }) {
+  const useTotal = mode === "total" && !!def.total;
+  const series = useMemo(() => metricSeries(results, def, useTotal ? "total" : "year").p50, [results, def, useTotal]);
+  const fmtFn = useTotal && def.total ? def.total.format : def.format;
+  const text = useTotal && def.total ? def.total.label : def.label;
+  const now = mode === "total" && !def.total; // a stock, not a flow: same number in both modes
+  const color = SECTIONS[def.section].color;
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 3, opacity: now ? 0.75 : 1 }}>
-      <Dot tier={tier} />
-      <span style={{ color: "#546e7a", flex: 1 }}>
+      <Dot tier={def.tier} />
+      <span style={{ color: "#546e7a", flex: 1 }} title={def.about}>
         {text}
         {now && <span style={{ fontSize: 10, color: "#90a4ae", marginLeft: 5 }}>now</span>}
       </span>
@@ -459,17 +412,6 @@ function Row({
     </div>
   );
 }
-
-// Running-total definitions. Rates (per day, per month) are converted to per-year amounts before summing.
-const T: Record<string, Total> = {
-  water: { get: (r) => r.water.withdrawal_mgd.value * 365, format: (n) => `${fmt(n)} M gal`, label: "Water used so far" },
-  mwh: { get: (r) => r.energy.facility_mwh.value, format: (n) => `${fmt(n)} MWh`, label: "Power used so far" },
-  bill: { get: (r) => r.ratepayer.household_bill_delta_usd_month.value * 12, format: (n) => `+$${fmt(n)}`, label: "Paid per household so far" },
-  taxForgone: { get: (r) => r.fiscal.property_tax_forgone_usd.value, format: money, label: "Tax forgiven so far" },
-  pilot: { get: (r) => r.fiscal.pilot_received_usd.value, format: money, label: "PILOT received so far" },
-  perPupil: { get: (r) => r.fiscal.net_per_pupil_delta_usd.value, format: (n) => (n >= 0 ? "+" : "") + money(n), label: "Per student so far" },
-  construction: { get: (r) => r.jobs.construction_fte.value, format: (n) => `${fmt(Math.round(n))} job-yrs`, label: "Construction work so far" },
-};
 
 const B = ({ children }: { children: ReactNode }) => <b style={{ color: "#263238" }}>{children}</b>;
 
@@ -485,7 +427,7 @@ function noiseWord(dba: number) {
 // numbers below support.
 function Verdict({ results, builtBy, moratoriumRate, settings }: { results: YearResult[]; builtBy: number | null; moratoriumRate: number; settings: Settings }) {
   const last = results[results.length - 1];
-  const sum = (g: Getter) => results.reduce((s, r) => s + g(r), 0);
+  const sum = (g: (r: YearResult) => number) => results.reduce((s, r) => s + g(r), 0);
   const perm = Math.round(last.jobs.permanent_fte.value);
   const constr = Math.round(sum((r) => r.jobs.construction_fte.value));
   const pilot = sum((r) => r.fiscal.pilot_received_usd.value);
@@ -514,22 +456,6 @@ function Verdict({ results, builtBy, moratoriumRate, settings }: { results: Year
 }
 
 // Getters live outside the component so the trend lines don't recompute every render
-const G = {
-  water: (r: YearResult) => r.water.withdrawal_mgd.value,
-  waterPct: (r: YearResult) => r.water.pct_of_system_capacity.value,
-  waterRate: (r: YearResult) => r.water.residential_rate_delta_pct.value,
-  mwh: (r: YearResult) => r.energy.facility_mwh.value,
-  homes: (r: YearResult) => r.energy.homes_equivalent.value,
-  bill: (r: YearResult) => r.ratepayer.household_bill_delta_usd_month.value,
-  taxForgone: (r: YearResult) => r.fiscal.property_tax_forgone_usd.value,
-  pilot: (r: YearResult) => r.fiscal.pilot_received_usd.value,
-  perPupil: (r: YearResult) => r.fiscal.net_per_pupil_delta_usd.value,
-  noise: (r: YearResult) => r.nuisance.noise_dba_at_nearest_residence.value,
-  acres: (r: YearResult) => r.land.acres_converted.value,
-  construction: (r: YearResult) => r.jobs.construction_fte.value,
-  permanent: (r: YearResult) => r.jobs.permanent_fte.value,
-};
-
 export function ImpactsPanel({
   results,
   t,
@@ -540,6 +466,7 @@ export function ImpactsPanel({
   moratoriumRate,
   builtBy,
   settings,
+  onOpenAnalytics,
 }: {
   results: YearResult[];
   t: number; // fractional index into results (months / 12)
@@ -550,10 +477,10 @@ export function ImpactsPanel({
   moratoriumRate: number; // share of Monte Carlo runs in which opposition stops expansion
   builtBy: number | null;
   settings: Settings;
+  onOpenAnalytics?: () => void;
 }) {
   const r = useMemo(() => interpResult(results, t), [results, t]);
   const [mode, setMode] = useState<ViewMode>("year");
-  const rowProps = { results, t, mode };
   const tab = (m: ViewMode, text: string) => (
     <button
       type="button"
@@ -584,47 +511,34 @@ export function ImpactsPanel({
       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
         {tab("year", "This year")}
         {tab("total", "Total so far")}
-        <span style={{ fontSize: 11, color: "#90a4ae", marginLeft: 4 }}>{mode === "total" ? "running sums through " + timeLabel : "rates in " + timeLabel}</span>
+        <span style={{ fontSize: 11, color: "#90a4ae", marginLeft: 4, flex: 1 }}>{mode === "total" ? "running sums through " + timeLabel : "rates in " + timeLabel}</span>
+        {onOpenAnalytics && (
+          <button type="button" onClick={onOpenAnalytics} title="Full-size charts for every number, with ranges and a table" style={{ padding: "3px 9px", borderRadius: 6, border: "1px solid #cfd8dc", background: "white", color: "#1e88e5", fontSize: 11, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+            Analytics ↗
+          </button>
+        )}
       </div>
 
       {r.active_mw < 0.5 && mode === "year" ? (
         <div style={{ fontSize: 13, color: "#546e7a", margin: "0 0 12px" }}>Nothing running yet — press play, or drag the timeline.</div>
       ) : null}
 
-      <Section title="Water" color="#1e88e5">
-        <Row {...rowProps} color="#1e88e5" tier="estimated" total={T.water} label="Water used per day" get={G.water} format={(n) => `${fmt(n, 2)} M gal`} />
-        <Row {...rowProps} color="#1e88e5" tier="estimated" label="Share of city system" get={G.waterPct} format={(n) => `${fmt(n, 1)}%`} />
-        <Row {...rowProps} color="#1e88e5" tier="assumed" label="Home water rates" get={G.waterRate} format={(n) => `+${fmt(n, 1)}%`} />
-      </Section>
-
-      <Section title="Electricity" color="#f9a825">
-        <Row {...rowProps} color="#f9a825" tier="solid" total={T.mwh} label="Power used per year" get={G.mwh} format={(n) => `${fmt(n)} MWh`} />
-        <Row {...rowProps} color="#f9a825" tier="solid" label="Same as # of homes" get={G.homes} format={(n) => fmt(n)} />
-        <Row {...rowProps} color="#f9a825" tier="estimated" total={T.bill} label="Household bill" get={G.bill} format={(n) => `+$${fmt(n, 2)}/mo`} />
-      </Section>
-
-      <Section title="Schools and taxes" color="#8e24aa">
-        <Row {...rowProps} color="#8e24aa" tier="solid" total={T.taxForgone} label="Property tax forgiven" get={G.taxForgone} format={money} />
-        <Row {...rowProps} color="#8e24aa" tier="solid" total={T.pilot} label="Payment to town (PILOT)" get={G.pilot} format={money} />
-        <Row {...rowProps} color="#8e24aa" tier="estimated" total={T.perPupil} label="Per student" get={G.perPupil} format={(n) => (n >= 0 ? "+" : "") + money(n)} />
-      </Section>
-
-      <Section title="Noise" color="#e53935">
-        <Row {...rowProps} color="#e53935" tier="assumed" label="At the nearest home" get={G.noise} format={(n) => `${fmt(n)} dBA`} />
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
-          <Dot tier="assumed" />
-          <span style={{ color: "#546e7a", flex: 1 }}>Buildings in the loud zone</span>
-          <span style={{ fontWeight: 700 }}>
-            <AnimatedNumber value={homesInZone} format={(n) => fmt(Math.round(n))} />
-          </span>
-        </div>
-      </Section>
-
-      <Section title="Land and jobs" color="#43a047">
-        <Row {...rowProps} color="#43a047" tier="solid" label="Farmland converted" get={G.acres} format={(n) => `${fmt(n)} acres`} />
-        <Row {...rowProps} color="#43a047" tier="estimated" total={T.construction} label="Construction jobs" get={G.construction} format={(n) => fmt(Math.round(n))} />
-        <Row {...rowProps} color="#43a047" tier="estimated" label="Permanent jobs" get={G.permanent} format={(n) => fmt(Math.round(n))} />
-      </Section>
+      {SECTION_ORDER.map((sid) => (
+        <Section key={sid} title={SECTIONS[sid].title} color={SECTIONS[sid].color}>
+          {METRICS.filter((d) => d.section === sid).map((d) => (
+            <Row key={d.id} def={d} results={results} t={t} mode={mode} />
+          ))}
+          {sid === "noise" && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+              <Dot tier="assumed" />
+              <span style={{ color: "#546e7a", flex: 1 }}>Buildings in the loud zone</span>
+              <span style={{ fontWeight: 700 }}>
+                <AnimatedNumber value={homesInZone} format={(n) => fmt(Math.round(n))} />
+              </span>
+            </div>
+          )}
+        </Section>
+      ))}
     </div>
   );
 }

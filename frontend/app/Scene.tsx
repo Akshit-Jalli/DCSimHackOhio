@@ -29,6 +29,7 @@ import { WILMINGTON, defaultProfileFor, profileToBaseline, profileToCoefOverride
 import { BuildMenu, ImpactsPanel, MONTHS_TOTAL, SettingsPanel, YearBar, panel } from "./ui/Panels";
 import { ConfirmBar } from "./ui/ConfirmBar";
 import { TownPanel } from "./ui/TownPanel";
+import { Analytics } from "./ui/Analytics";
 import { LoadingScreen } from "./ui/LoadingScreen";
 
 const MS_PER_MONTH = 75; // autoplay: 192 months in about 14 seconds
@@ -299,6 +300,7 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
     town.slug === "wilmington-oh" ? WILMINGTON : defaultProfileFor(`${town.name}, ${town.state}`, town.slug, town.state, town.countyFips ?? "")
   );
   const [showTown, setShowTown] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
 
   // Map data
   const [counts, setCounts] = useState<Int32Array | null>(null);
@@ -495,6 +497,7 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
   function editPlacement() {
     setConfirmed(false);
     setPlaying(false);
+    setShowAnalytics(false);
   }
 
   // The container's onPointerUp misses releases over a panel or outside the
@@ -520,6 +523,7 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
     setLastValid(null);
     setConfirmed(false);
     setPlaying(false);
+    setShowAnalytics(false);
   }
 
   const placed = !!(settings && preset && pos && !dragging); // dropped, maybe not confirmed
@@ -680,6 +684,15 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
         </button>
         {simulating && (
           <button
+            onClick={() => setShowAnalytics(true)}
+            title="Every number large, over all fifteen years, with ranges and a table"
+            style={{ ...panel, position: "relative", padding: "0 14px", border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <span style={{ fontSize: 15 }}>▥</span> Analytics
+          </button>
+        )}
+        {simulating && (
+          <button
             onClick={editPlacement}
             title="Back to build mode: move or swap the data center"
             style={{ ...panel, position: "relative", padding: "0 14px", border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
@@ -732,6 +745,27 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
           moratoriumRate={sim?.moratoriumRate ?? 0}
           builtBy={sim?.builtBy ?? null}
           settings={settings}
+          onOpenAnalytics={() => setShowAnalytics(true)}
+        />
+      )}
+
+      {/* Full-screen analytics over everything */}
+      {simulating && showAnalytics && results && settings && preset && (
+        <Analytics
+          results={results}
+          t={t}
+          month={month}
+          setMonth={setMonth}
+          playing={playing}
+          setPlaying={setPlaying}
+          status={status}
+          townName={`${town.name}, ${town.state}`}
+          otherTown={town.slug !== "wilmington-oh"}
+          settings={settings}
+          preset={preset}
+          moratoriumRate={sim?.moratoriumRate ?? 0}
+          builtBy={sim?.builtBy ?? null}
+          onClose={() => setShowAnalytics(false)}
         />
       )}
 

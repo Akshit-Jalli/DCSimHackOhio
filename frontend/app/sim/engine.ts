@@ -344,7 +344,7 @@ function percentile(sorted: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
-const N_DRAWS = 40;
+export const N_DRAWS = 40;
 const SEED = 20261024;
 
 type MetricPath = [keyof YearResult, string];

@@ -85,7 +85,8 @@ const STEPS: Step[] = [
       <>
         <p style={p}>
           Drag a size from the bar at the bottom of the screen onto the map. The lot snaps to the grid and
-          can&apos;t sit on water or on top of existing buildings.
+          can&apos;t sit on water or on top of existing buildings. Nothing runs until you press the green
+          <b> ✓ Confirm</b>. Until then you are in build mode: move it, swap it, or cancel.
         </p>
         <p style={p}>
           Where you put it matters. The distance to the nearest home sets the noise level, and the land you
@@ -115,7 +116,16 @@ const STEPS: Step[] = [
             give up.
           </li>
         </ul>
-        <p style={p}>Every lever here is a term from real agreements.</p>
+        <p style={p}>
+          Every lever here is a term from real agreements. <b>Advanced</b> opens the rest: PUE, cost per
+          megawatt, the PILOT payment, and a few engine coefficients you can move within their published
+          range.
+        </p>
+        <p style={p}>
+          <b>Town data</b> (top left) is the other half: the town&apos;s own school, sewer, farm and grid
+          numbers the model runs on. Wilmington&apos;s are verified. Any other town starts on defaults you
+          can edit or autofill.
+        </p>
       </>
     ),
   },
@@ -130,6 +140,10 @@ const STEPS: Step[] = [
         <p style={p}>
           If opposition crosses a threshold, expansion stops. That comes out of the model, not a script —
           it is the town reacting to what the deal did to its bills.
+        </p>
+        <p style={p}>
+          The side panel shows each number small. <b>Analytics</b> shows every one of them large, with its
+          range over all fifteen years, the engine&apos;s internal ledgers, and a table you can copy.
         </p>
       </>
     ),
