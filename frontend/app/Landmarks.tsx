@@ -330,11 +330,12 @@ export default function Landmarks({
       y: 70,
       z: p.xz[1],
       icon: ICON[p.kind],
+      kind: p.kind,
       name: p.name,
       badge: badgeFor(p.kind, p.xz[0], p.xz[1]),
     }));
     infra?.towers.forEach(([x, z], i) =>
-      out.push({ id: `t${i}`, x, y: 95, z, icon: ICON.tower, name: "Water tower", badge: inLoudZone(x, z) ? { text: "🔊 Loud zone", tone: "bad" } : null, small: true })
+      out.push({ id: `t${i}`, x, y: 95, z, icon: ICON.tower, kind: "water_tower", name: "Water tower", badge: inLoudZone(x, z) ? { text: "🔊 Loud zone", tone: "bad" } : null, small: true })
     );
     infra?.subs.forEach((s, i) =>
       out.push({
@@ -343,6 +344,7 @@ export default function Landmarks({
         y: 45,
         z: s.c[1],
         icon: ICON.substation,
+        kind: "substation",
         name: "Power substation",
         badge: hookup && hookup.sub === s && site && r && r.active_mw > 0 ? { text: `New line: ${hookup.km.toFixed(1)} km`, tone: "warn" } : null,
         small: true,

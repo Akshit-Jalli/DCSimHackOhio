@@ -26,6 +26,7 @@ import type { SimInput } from "./sim/types";
 import { runSimulation } from "./sim/fakeEngine";
 import { BuildMenu, ImpactsPanel, SettingsPanel, YearBar, panel } from "./ui/Panels";
 import { LoadingScreen } from "./ui/LoadingScreen";
+import type { FlyTarget, LessonControl } from "./lessonControl";
 
 const MAX_BUILDINGS_PER_TILE = 8; // more than this = part of town, can't build
 
@@ -211,8 +212,19 @@ function snap(v: number, tiles: number) {
   return i * TILE;
 }
 
-// Smoothly flies the camera home whenever flyId changes (first flight is the slower intro)
-function CameraFlyer({ flyId }: { flyId: number }) {
+// A camera view: where the camera sits and what it looks at
+type View = { pos: THREE.Vector3; target: THREE.Vector3 };
+const HOME: View = { pos: HOME_POS, target: HOME_TARGET };
+
+// Looking at a ground point from the south-east, "dist" meters away
+function viewOf(x: number, z: number, dist: number): View {
+  const target = new THREE.Vector3(x, 0, z);
+  return { pos: target.clone().add(new THREE.Vector3(0.35, 0.75, 0.65).multiplyScalar(dist)), target };
+}
+
+// Smoothly flies the camera to fly.to whenever fly.id changes (first flight is the slower intro)
+function CameraFlyer({ fly, onDone }: { fly: { id: number; to: View }; onDone: () => void }) {
+  const flyId = fly.id;
   const camera = useThree((s) => s.camera);
   const controls = useThree((s) => s.controls) as unknown as Controls | null;
   const t = useRef(1);
@@ -228,13 +240,14 @@ function CameraFlyer({ flyId }: { flyId: number }) {
       t.current = 0;
     }
     if (t.current >= 1) return;
-    t.current = Math.min(1, t.current + dt / (lastId.current === 1 ? 2.6 : 1.2));
+    t.current = Math.min(1, t.current + dt / (lastId.current === 1 ? 2.6 : 1.4));
     const k = t.current < 0.5 ? 4 * t.current ** 3 : 1 - Math.pow(-2 * t.current + 2, 3) / 2; // ease in-out
-    camera.position.lerpVectors(fromPos.current, HOME_POS, k);
+    camera.position.lerpVectors(fromPos.current, fly.to.pos, k);
     if (controls) {
-      controls.target.lerpVectors(fromTarget.current, HOME_TARGET, k);
+      controls.target.lerpVectors(fromTarget.current, fly.to.target, k);
       controls.update();
     }
+    if (t.current >= 1) onDone();
   });
   return null;
 }
@@ -275,8 +288,9 @@ function Hud({
   return null;
 }
 
-// townMenu: the town name / search dropdown shown in the header (from TownApp)
-export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: ReactNode }) {
+// townMenu: the town name / search dropdown shown in the header (from TownApp; none in lessons)
+// lesson: lets a lesson move the camera, limit controls, highlight things and hear what the student did
+export default function Scene({ town, townMenu, lesson }: { town: TownInfo; townMenu?: ReactNode; lesson?: LessonControl }) {
   // What's placed
   const [settings, setSettings] = useState<Settings | null>(null);
   const [pos, setPos] = useState<[number, number] | null>(null);
@@ -289,10 +303,11 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
   const [landBlocked, setLandBlocked] = useState<Uint8Array | null>(null);
 
   // Time
-  const [year, setYear] = useState(2031);
+  const [year, setYear] = useState(lesson?.startYear ?? 2031);
   const [playing, setPlaying] = useState(false);
 
-  const [flyId, setFlyId] = useState(0);
+  const [fly, setFly] = useState<{ id: number; to: View }>({ id: 0, to: HOME });
+  const flyTo = (to: View) => setFly((f) => ({ id: f.id + 1, to }));
   const [trees, setTrees] = useState<Float32Array | null>(null);
   const [isNight, setIsNight] = useState(false);
   const [labels, setLabels] = useState<Label[]>([]);
@@ -309,7 +324,7 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
 
   // Intro: fly in from high up once the map has loaded
   useEffect(() => {
-    if (!loading) setFlyId((n) => (n === 0 ? 1 : n));
+    if (!loading) setFly((f) => (f.id === 0 ? { id: 1, to: HOME } : f));
   }, [loading]);
   const preset: Preset | null = settings ? PRESETS.find((p) => p.id === settings.presetId) ?? null : null;
   const tiles = preset?.tiles ?? 4;
@@ -431,8 +446,10 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
     if (!dragging) return;
     setDragging(false);
     document.body.style.cursor = "";
-    if (pos && valid) setLastValid(pos);
-    else if (lastValid) setPos(lastValid);
+    if (pos && valid) {
+      setLastValid(pos);
+      if (settings) onEvent.current?.({ type: "placed", preset: settings.presetId, mw: settings.mw, x: pos[0], z: pos[1] });
+    } else if (lastValid) setPos(lastValid);
     else {
       setPos(null);
       setSettings(null);
@@ -440,6 +457,7 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
   }
 
   function remove() {
+    onEvent.current?.({ type: "removed" });
     setSettings(null);
     setPos(null);
     setLastValid(null);
@@ -450,6 +468,59 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
     () => (placed && pos ? { pos, half: lotSize / 2, noiseRadius } : null),
     [placed, pos, lotSize, noiseRadius]
   );
+
+  // ---------- Lesson control ----------
+  // Tell the lesson what happened (ref so effects don't re-run when the lesson re-renders)
+  const onEvent = useRef(lesson?.onEvent);
+  useEffect(() => {
+    onEvent.current = lesson?.onEvent;
+  });
+  useEffect(() => {
+    if (!loading) onEvent.current?.({ type: "loaded" });
+  }, [loading]);
+  useEffect(() => {
+    onEvent.current?.({ type: "year", year });
+  }, [year]);
+  useEffect(() => {
+    onEvent.current?.({ type: "results", year, result: placed ? r : null });
+  }, [year, r, placed]);
+
+  // Nearest pin of a kind to the data center (or to the map center)
+  function nearestLabel(kind: string) {
+    const [px, pz] = pos ?? [0, 0];
+    let best: Label | null = null;
+    for (const l of labels) {
+      if (l.kind !== kind) continue;
+      if (!best || Math.hypot(l.x - px, l.z - pz) < Math.hypot(best.x - px, best.z - pz)) best = l;
+    }
+    return best;
+  }
+
+  function viewFor(target: FlyTarget): View {
+    if (target === "home") return HOME;
+    if (typeof target === "object") return viewOf(target.x, target.z, target.dist ?? 900);
+    const [px, pz] = pos ?? [0, 0];
+    if (target === "datacenter") return viewOf(px, pz, lotSize * 1.6 + 400);
+    if (target === "loudzone") return viewOf(px, pz, Math.max(1500, noiseRadius * 2.8));
+    const l = nearestLabel(target);
+    return l ? viewOf(l.x, l.z, 700) : HOME;
+  }
+
+  // Fly when the lesson asks (once the map and its pins exist)
+  const lessonFlyId = lesson?.fly?.id;
+  const handledFly = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (loading || !lesson?.fly || handledFly.current === lesson.fly.id) return;
+    handledFly.current = lesson.fly.id;
+    flyTo(viewFor(lesson.fly.target));
+    // Only a new fly id (or the map finishing loading) should start a flight
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonFlyId, loading]);
+
+  // The pin a lesson points at gets highlighted
+  const focusId = lesson?.highlightLandmark ? nearestLabel(lesson.highlightLandmark)?.id : undefined;
+  const shownLabels = focusId ? labels.map((l) => (l.id === focusId ? { ...l, highlight: true } : l)) : labels;
+  const canBuild = !lesson?.presets || lesson.presets.length > 0;
 
   return (
     <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }} onPointerUp={endDrag}>
@@ -537,7 +608,7 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
         {/* Map controls: left drag = move, right drag = rotate/tilt, scroll = zoom */}
         <MapControls
           makeDefault
-          enabled={!dragging}
+          enabled={!dragging && !lesson?.lockCamera}
           minDistance={150}
           maxDistance={9000}
           maxPolarAngle={Math.PI / 2.2}
@@ -554,12 +625,12 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
           />
         </GizmoHelper>
 
-        <CameraFlyer flyId={flyId} />
+        <CameraFlyer fly={fly} onDone={() => onEvent.current?.({ type: "flown" })} />
         <Hud compassRef={compassRef} barRef={barRef} labelRef={labelRef} />
       </Canvas>
 
       {/* Floating labels */}
-      <LabelLayer labels={labels} />
+      <LabelLayer labels={shownLabels} />
 
       {/* Soft darkening at the screen edges */}
       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 1, background: isNight ? "radial-gradient(ellipse at center, transparent 45%, rgba(5,10,30,0.45) 100%)" : "radial-gradient(ellipse at center, transparent 55%, rgba(20,40,60,0.22) 100%)", transition: "background 1s" }} />
@@ -576,7 +647,7 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
           </div>
         </div>
         <button
-          onClick={() => setFlyId((n) => n + 1)}
+          onClick={() => flyTo(HOME)}
           style={{ ...panel, position: "relative", padding: "0 14px", border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
         >
           <span style={{ fontSize: 15 }}>⟲</span> Reset view
@@ -595,24 +666,33 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
           Can&apos;t build here: too close to town or water
         </div>
       )}
-      {!settings && !loading && (
+      {!settings && !loading && !lesson && (
         <div style={{ ...panel, top: 16, left: "50%", transform: "translateX(-50%)", padding: "10px 16px", fontWeight: 600, pointerEvents: "none" }}>
           Drag a data center from the bar below onto the map
         </div>
       )}
 
       {/* Left: impacts */}
-      {placed && r && results && <ImpactsPanel results={results} year={year} homesInZone={homesInZone} otherTown={town.slug !== "wilmington-oh"} />}
+      {placed && r && results && (lesson?.showImpacts ?? true) && (
+        <ImpactsPanel
+          results={results}
+          year={year}
+          homesInZone={homesInZone}
+          otherTown={town.slug !== "wilmington-oh"}
+          highlight={lesson?.highlightMetric}
+          note={lesson ? "Rough estimates: the real model isn't connected yet." : undefined}
+        />
+      )}
 
       {/* Right: settings */}
-      {placed && settings && preset && (
+      {placed && settings && preset && (lesson?.showSettings ?? true) && (
         <SettingsPanel preset={preset} settings={settings} onChange={setSettings} onRemove={remove} />
       )}
 
       {/* Bottom: year slider and build menu */}
       <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 10 }}>
-        {placed && <YearBar year={year} setYear={setYear} playing={playing} setPlaying={setPlaying} activeMW={running} />}
-        <BuildMenu activeId={settings?.presetId ?? null} onStartDrag={startFromMenu} />
+        {placed && (lesson?.showYear ?? true) && <YearBar year={year} setYear={setYear} playing={playing} setPlaying={setPlaying} activeMW={running} />}
+        {canBuild && <BuildMenu activeId={settings?.presetId ?? null} onStartDrag={startFromMenu} only={lesson?.presets} />}
       </div>
 
       {/* Scale bar and compass */}

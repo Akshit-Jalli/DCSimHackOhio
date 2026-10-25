@@ -2,14 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { LatLon, Town, TownPick } from "@/lib/towns";
 import { areaOffsetText, setTown, type TownInfo } from "./mapConfig";
+import { DEFAULT_TOWN, loadWilmington } from "./defaultTown";
 import Scene from "./Scene";
 import { LoadingScreen } from "./ui/LoadingScreen";
 import { RegionPicker } from "./ui/RegionPicker";
 import { TownSearch } from "./ui/TownSearch";
 
-const DEFAULT_TOWN = "wilmington-oh";
-// Downtown Wilmington, matching the files committed in public/
-const WILMINGTON_FALLBACK: TownInfo = { slug: "wilmington-oh", name: "Wilmington", state: "OH", county: "Clinton County", countyFips: "39027", lat: 39.43611, lon: -83.81389 };
 
 const LAYER_LABELS: Record<string, string> = {
   buildings: "Buildings",
@@ -45,13 +43,8 @@ export default function TownApp() {
   // Wilmington always works: from the cache, or from public/ on a fresh clone
   async function showDefault() {
     job.current++;
-    try {
-      const s = await fetch(`/api/town/${DEFAULT_TOWN}`).then((r) => r.json());
-      if (s.state === "ready") return show(s.town);
-    } catch {
-      // API down: fall through to public/
-    }
-    show(WILMINGTON_FALLBACK, true);
+    const { town, fromPublic } = await loadWilmington();
+    show(town, fromPublic);
   }
 
   // Wait for a map on the server (start = begin downloading it first), showing progress

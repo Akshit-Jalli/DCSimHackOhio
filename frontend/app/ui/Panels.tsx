@@ -37,13 +37,15 @@ function money(n: number) {
 export function BuildMenu({
   activeId,
   onStartDrag,
+  only,
 }: {
   activeId: string | null;
   onStartDrag: (p: Preset, e: ReactPointerEvent) => void;
+  only?: string[]; // preset ids to show (lessons); default all
 }) {
   return (
     <div style={{ display: "flex", gap: 10 }}>
-      {PRESETS.map((p) => (
+      {PRESETS.filter((p) => !only || only.includes(p.id)).map((p) => (
         <button
           key={p.id}
           onPointerDown={(e) => onStartDrag(p, e)}
@@ -256,7 +258,25 @@ function Sparkline({ series, index, color }: { series: number[]; index: number; 
 
 type Getter = (r: YearResult) => number;
 
+// Style for a row a lesson is pointing at
+function rowStyle(on: boolean): CSSProperties {
+  return on
+    ? { background: "#fff59d", borderRadius: 6, boxShadow: "0 0 0 3px #ffb300", animation: "dcrowpulse 1.4s ease-in-out infinite" }
+    : {};
+}
+
+// Scrolls a highlighted row into view inside the panel
+function useScrollWhen(on: boolean) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (on) ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [on]);
+  return ref;
+}
+
 function Row({
+  k,
+  hl,
   label,
   get,
   format,
@@ -264,6 +284,8 @@ function Row({
   index,
   color,
 }: {
+  k: string; // key a lesson uses to highlight this row (METRIC_KEYS)
+  hl?: string | null;
   label: string;
   get: Getter;
   format: (n: number) => string;
@@ -272,8 +294,10 @@ function Row({
   color: string;
 }) {
   const series = useMemo(() => results.map(get), [results, get]);
+  const on = hl === k;
+  const ref = useScrollWhen(on);
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 3 }}>
+    <div ref={ref} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 3, padding: on ? "2px 4px" : 0, ...rowStyle(on) }}>
       <span style={{ color: "#546e7a", flex: 1 }}>{label}</span>
       <Sparkline series={series} index={index} color={color} />
       <span style={{ fontWeight: 700, whiteSpace: "nowrap", minWidth: 74, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
@@ -300,20 +324,43 @@ const G = {
   permanent: (r: YearResult) => r.jobs.permanent_fte.value,
 };
 
+// Row keys lessons can highlight (highlightMetric). Keep in sync with the rows below.
+export const METRIC_KEYS = [
+  "water.daily",
+  "water.share",
+  "water.rates",
+  "power.mwh",
+  "power.homes",
+  "power.bill",
+  "money.tax_forgiven",
+  "money.pilot",
+  "money.per_student",
+  "noise.nearest_home",
+  "noise.loud_zone",
+  "land.acres",
+  "jobs.construction",
+  "jobs.permanent",
+] as const;
+
 export function ImpactsPanel({
   results,
   year,
   homesInZone,
   otherTown,
+  highlight,
+  note,
 }: {
   results: YearResult[];
   year: number;
   homesInZone: number;
   otherTown: boolean; // fake engine only knows Wilmington's water/schools/taxes
+  highlight?: string | null; // a METRIC_KEYS row to point at (lessons)
+  note?: string; // replaces the "Demo numbers" line
 }) {
   const index = Math.max(0, results.findIndex((x) => x.year === year));
   const r = results[index];
-  const rowProps = { results, index };
+  const rowProps = { results, index, hl: highlight };
+  const loudRef = useScrollWhen(highlight === "noise.loud_zone");
   return (
     <div style={{ ...panel, top: 78, left: 16, width: 330, padding: 16, maxHeight: "calc(100vh - 240px)", overflowY: "auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -321,34 +368,35 @@ export function ImpactsPanel({
         <div style={{ fontSize: 12, color: "#607d8b" }}>{fmt(r.active_mw)} MW</div>
       </div>
       <div style={{ fontSize: 11, color: "#ef6c00", background: "#fff3e0", borderRadius: 6, padding: "4px 8px", margin: "8px 0 14px" }}>
-        {otherTown ? "Demo numbers (Wilmington defaults). Engine not connected yet." : "Demo numbers. Engine not connected yet."}
+        {note ?? (otherTown ? "Demo numbers (Wilmington defaults). Engine not connected yet." : "Demo numbers. Engine not connected yet.")}
       </div>
+      <style>{`@keyframes dcrowpulse { 0%, 100% { box-shadow: 0 0 0 3px #ffb300 } 50% { box-shadow: 0 0 0 6px rgba(255,179,0,0.35) } }`}</style>
 
       {r.active_mw === 0 ? (
         <div style={{ fontSize: 13, color: "#546e7a", marginBottom: 14 }}>Not running yet. Drag the year slider forward.</div>
       ) : null}
 
       <Section title="Water" color="#1e88e5">
-        <Row {...rowProps} color="#1e88e5" label="Water used per day" get={G.water} format={(n) => `${fmt(n, 2)} M gal`} />
-        <Row {...rowProps} color="#1e88e5" label="Share of city system" get={G.waterPct} format={(n) => `${fmt(n, 1)}%`} />
-        <Row {...rowProps} color="#1e88e5" label="Home water rates" get={G.waterRate} format={(n) => `+${fmt(n, 1)}%`} />
+        <Row {...rowProps} k="water.daily" color="#1e88e5" label="Water used per day" get={G.water} format={(n) => `${fmt(n, 2)} M gal`} />
+        <Row {...rowProps} k="water.share" color="#1e88e5" label="Share of city system" get={G.waterPct} format={(n) => `${fmt(n, 1)}%`} />
+        <Row {...rowProps} k="water.rates" color="#1e88e5" label="Home water rates" get={G.waterRate} format={(n) => `+${fmt(n, 1)}%`} />
       </Section>
 
       <Section title="Electricity" color="#f9a825">
-        <Row {...rowProps} color="#f9a825" label="Power used per year" get={G.mwh} format={(n) => `${fmt(n)} MWh`} />
-        <Row {...rowProps} color="#f9a825" label="Same as # of homes" get={G.homes} format={(n) => fmt(n)} />
-        <Row {...rowProps} color="#f9a825" label="Household bill" get={G.bill} format={(n) => `+$${fmt(n, 2)}/mo`} />
+        <Row {...rowProps} k="power.mwh" color="#f9a825" label="Power used per year" get={G.mwh} format={(n) => `${fmt(n)} MWh`} />
+        <Row {...rowProps} k="power.homes" color="#f9a825" label="Same as # of homes" get={G.homes} format={(n) => fmt(n)} />
+        <Row {...rowProps} k="power.bill" color="#f9a825" label="Household bill" get={G.bill} format={(n) => `+$${fmt(n, 2)}/mo`} />
       </Section>
 
       <Section title="Schools and taxes" color="#8e24aa">
-        <Row {...rowProps} color="#8e24aa" label="Property tax forgiven" get={G.taxForgone} format={money} />
-        <Row {...rowProps} color="#8e24aa" label="Payment to town (PILOT)" get={G.pilot} format={money} />
-        <Row {...rowProps} color="#8e24aa" label="Per student" get={G.perPupil} format={(n) => (n >= 0 ? "+" : "") + money(n)} />
+        <Row {...rowProps} k="money.tax_forgiven" color="#8e24aa" label="Property tax forgiven" get={G.taxForgone} format={money} />
+        <Row {...rowProps} k="money.pilot" color="#8e24aa" label="Payment to town (PILOT)" get={G.pilot} format={money} />
+        <Row {...rowProps} k="money.per_student" color="#8e24aa" label="Per student" get={G.perPupil} format={(n) => (n >= 0 ? "+" : "") + money(n)} />
       </Section>
 
       <Section title="Noise" color="#e53935">
-        <Row {...rowProps} color="#e53935" label="At the nearest home" get={G.noise} format={(n) => `${fmt(n)} dBA`} />
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
+        <Row {...rowProps} k="noise.nearest_home" color="#e53935" label="At the nearest home" get={G.noise} format={(n) => `${fmt(n)} dBA`} />
+        <div ref={loudRef} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, ...rowStyle(highlight === "noise.loud_zone") }}>
           <span style={{ color: "#546e7a" }}>Buildings in the loud zone</span>
           <span style={{ fontWeight: 700 }}>
             <AnimatedNumber value={homesInZone} format={(n) => fmt(Math.round(n))} />
@@ -357,9 +405,9 @@ export function ImpactsPanel({
       </Section>
 
       <Section title="Land and jobs" color="#43a047">
-        <Row {...rowProps} color="#43a047" label="Farmland converted" get={G.acres} format={(n) => `${fmt(n)} acres`} />
-        <Row {...rowProps} color="#43a047" label="Construction jobs" get={G.construction} format={(n) => fmt(Math.round(n))} />
-        <Row {...rowProps} color="#43a047" label="Permanent jobs" get={G.permanent} format={(n) => fmt(Math.round(n))} />
+        <Row {...rowProps} k="land.acres" color="#43a047" label="Farmland converted" get={G.acres} format={(n) => `${fmt(n)} acres`} />
+        <Row {...rowProps} k="jobs.construction" color="#43a047" label="Construction jobs" get={G.construction} format={(n) => fmt(Math.round(n))} />
+        <Row {...rowProps} k="jobs.permanent" color="#43a047" label="Permanent jobs" get={G.permanent} format={(n) => fmt(Math.round(n))} />
       </Section>
     </div>
   );
