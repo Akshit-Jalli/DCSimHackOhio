@@ -25,7 +25,10 @@ import {
 import type { SimInput } from "./sim/types";
 import { simulate } from "./sim/engine";
 import { interpResult, monthLabel, nightFromMonth } from "./sim/interp";
+import { WILMINGTON, defaultProfileFor, profileToBaseline, profileToCoefOverrides, type TownProfile } from "./sim/townProfile";
 import { BuildMenu, ImpactsPanel, MONTHS_TOTAL, SettingsPanel, YearBar, panel } from "./ui/Panels";
+import { ConfirmBar } from "./ui/ConfirmBar";
+import { TownPanel } from "./ui/TownPanel";
 import { LoadingScreen } from "./ui/LoadingScreen";
 
 const MS_PER_MONTH = 75; // autoplay: 192 months in about 14 seconds
@@ -281,11 +284,21 @@ function Hud({
 
 // townMenu: the town name / search dropdown shown in the header (from TownApp)
 export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: ReactNode }) {
-  // What's placed
+  // What's placed. Two modes: BUILD (menu showing, lot draggable, nothing
+  // runs) until the user confirms; SIMULATE after (time runs, panels show,
+  // lot locked until "Edit placement").
   const [settings, setSettings] = useState<Settings | null>(null);
   const [pos, setPos] = useState<[number, number] | null>(null);
   const [lastValid, setLastValid] = useState<[number, number] | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+
+  // The town's own numbers. Wilmington is verified; any other town starts on
+  // Wilmington's values marked as defaults until autofilled or edited.
+  const [profile, setProfile] = useState<TownProfile>(() =>
+    town.slug === "wilmington-oh" ? WILMINGTON : defaultProfileFor(`${town.name}, ${town.state}`, town.slug, town.state, town.countyFips ?? "")
+  );
+  const [showTown, setShowTown] = useState(false);
 
   // Map data
   const [counts, setCounts] = useState<Int32Array | null>(null);
@@ -302,7 +315,6 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
   const [flyId, setFlyId] = useState(0);
   const [trees, setTrees] = useState<Float32Array | null>(null);
   const [nightMode, setNightMode] = useState<NightMode>("auto");
-  const [justPlaced, setJustPlaced] = useState(false);
   const [labels, setLabels] = useState<Label[]>([]);
   const hemiRef = useRef<THREE.HemisphereLight>(null);
   const sunRef = useRef<THREE.DirectionalLight>(null);
@@ -383,10 +395,10 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
       },
       facility: {
         it_load_mw: mw,
-        pue: 1.25,
+        pue: settings.pue,
         cooling: settings.cooling,
         water_source: settings.waterSource,
-        capex_usd: mw * 9.6e6,
+        capex_usd: mw * settings.capexPerMw,
         phases: scaledPhases(preset, mw),
         backup_gen_count: Math.ceil((mw * 1.2) / 2.5),
         backup_gen_mw_each: 2.5,
@@ -394,8 +406,8 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
       policy: {
         property_abatement_pct: settings.abatementPct,
         abatement_years: settings.abatementYears,
-        pilot_annual_usd: 1.2e6,
-        pilot_school_share_pct: 40,
+        pilot_annual_usd: settings.pilotAnnualUsd,
+        pilot_school_share_pct: settings.pilotSchoolSharePct,
         sales_tax_exemption: true,
         noise_setback_ft: 500,
         // The engine reads this as "tariff holds" when it contains the word tariff.
@@ -405,9 +417,14 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
     };
   }, [settings, preset, pos, tiles, town.countyFips]);
 
+  // Town profile -> engine baseline + place coefficients; user Advanced sliders override on top.
+  const simOpts = useMemo(
+    () => ({ baseline: profileToBaseline(profile), coefOverrides: { ...profileToCoefOverrides(profile), ...(settings?.overrides ?? {}) } }),
+    [profile, settings?.overrides]
+  );
   const sim = useMemo(
-    () => (input ? simulate(input, { nearestResidenceM }) : null),
-    [input, nearestResidenceM]
+    () => (input ? simulate(input, { nearestResidenceM }, simOpts) : null),
+    [input, nearestResidenceM, simOpts]
   );
   const results = sim?.rows ?? null;
   // Annual row for things that must match the engine literally (noise zone, labels);
@@ -447,31 +464,37 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
       setPos(null);
       setLastValid(null);
     }
+    setConfirmed(false);
     setPlaying(false);
     setDragging(true);
     document.body.style.cursor = "grabbing";
   }
 
-  // When you let go: keep it if the spot is allowed, otherwise snap back (or cancel).
-  // A first successful placement rewinds to the start and presses play, so time
-  // visibly runs from the moment the data center lands.
+  // When you let go: keep it if the spot is allowed, otherwise snap back (or
+  // cancel). The drop is tentative — the confirm bar takes it from here.
   function endDrag() {
     if (!dragging) return;
     setDragging(false);
     document.body.style.cursor = "";
-    if (pos && valid) {
-      const first = !lastValid;
-      setLastValid(pos);
-      if (first) {
-        setMonth(0);
-        setPlaying(true);
-      }
-      setJustPlaced(true);
-    } else if (lastValid) setPos(lastValid);
+    if (pos && valid) setLastValid(pos);
+    else if (lastValid) setPos(lastValid);
     else {
       setPos(null);
       setSettings(null);
     }
+  }
+
+  // Confirm: lock the lot, leave build mode, rewind, and press play.
+  function confirmPlacement() {
+    if (!pos || !valid) return;
+    setConfirmed(true);
+    setMonth(0);
+    setPlaying(true);
+  }
+  // Edit placement: back to build mode without losing the settings.
+  function editPlacement() {
+    setConfirmed(false);
+    setPlaying(false);
   }
 
   // The container's onPointerUp misses releases over a panel or outside the
@@ -491,20 +514,16 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
     };
   }, [dragging]);
 
-  // "Placed" hint fades after a few seconds
-  useEffect(() => {
-    if (!justPlaced) return;
-    const id = setTimeout(() => setJustPlaced(false), 4000);
-    return () => clearTimeout(id);
-  }, [justPlaced]);
-
   function remove() {
     setSettings(null);
     setPos(null);
     setLastValid(null);
+    setConfirmed(false);
+    setPlaying(false);
   }
 
-  const placed = !!(settings && preset && pos && !dragging);
+  const placed = !!(settings && preset && pos && !dragging); // dropped, maybe not confirmed
+  const simulating = placed && confirmed;
   const site = useMemo(
     () => (placed && pos ? { pos, half: lotSize / 2, noiseRadius } : null),
     [placed, pos, lotSize, noiseRadius]
@@ -598,6 +617,7 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
             noiseRadius={noiseRadius}
             onGrab={(e) => {
               e.stopPropagation();
+              if (confirmed) return; // locked while simulating; "Edit placement" unlocks
               setDragging(true);
               document.body.style.cursor = "grabbing";
             }}
@@ -652,6 +672,22 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
           <span style={{ fontSize: 15 }}>⟲</span> Reset view
         </button>
         <button
+          onClick={() => setShowTown((v) => !v)}
+          title="The town's own numbers the model runs on: schools, sewer, farms, grid. Edit or autofill."
+          style={{ ...panel, position: "relative", padding: "0 14px", border: showTown ? "2px solid #1e88e5" : "none", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+        >
+          <span style={{ fontSize: 15 }}>▦</span> Town data
+        </button>
+        {simulating && (
+          <button
+            onClick={editPlacement}
+            title="Back to build mode: move or swap the data center"
+            style={{ ...panel, position: "relative", padding: "0 14px", border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <span style={{ fontSize: 15 }}>✎</span> Edit placement
+          </button>
+        )}
+        <button
           onClick={() => setNightMode((m) => (m === "auto" ? "day" : m === "day" ? "night" : "auto"))}
           title={nightMode === "auto" ? "Light follows the calendar as time plays. Click to lock to day." : nightMode === "day" ? "Locked to day. Click to lock to night." : "Locked to night. Click to follow the calendar."}
           style={{ ...panel, position: "relative", padding: "0 14px", border: "none", fontWeight: 600, fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", gap: 6, background: isNight ? "rgba(30,40,70,0.85)" : panel.background, color: isNight ? "#e3ecff" : panel.color }}
@@ -677,14 +713,15 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
           <span style={{ color: "#607d8b", marginRight: 8 }}>1 · Pick a size</span>Drag a data center from the bar below onto the map
         </div>
       )}
-      {placed && justPlaced && !dragging && (
-        <div style={{ ...panel, top: 16, left: "50%", transform: "translateX(-50%)", padding: "10px 16px", fontWeight: 600, pointerEvents: "none", color: "#2e7d32" }}>
-          Placed. Time is running — set the deal terms on the right, or drag it to move it.
-        </div>
+      {placed && !confirmed && preset && (
+        <ConfirmBar name={preset.name} valid={valid} onConfirm={confirmPlacement} onCancel={remove} />
       )}
 
-      {/* Left: impacts */}
-      {placed && rI && results && (
+      {/* Town data (over the settings panel when open) */}
+      {showTown && <TownPanel profile={profile} onChange={setProfile} onClose={() => setShowTown(false)} />}
+
+      {/* Left: impacts — only once the placement is confirmed */}
+      {simulating && rI && results && (
         <ImpactsPanel
           results={results}
           t={t}
@@ -698,15 +735,18 @@ export default function Scene({ town, townMenu }: { town: TownInfo; townMenu: Re
         />
       )}
 
-      {/* Right: settings */}
-      {placed && settings && preset && (
+      {/* Right: settings — only once confirmed (and hidden under Town data when that's open) */}
+      {simulating && settings && preset && !showTown && (
         <SettingsPanel preset={preset} settings={settings} onChange={setSettings} onRemove={remove} />
       )}
 
-      {/* Bottom: year slider and build menu */}
+      {/* Bottom: build menu in build mode; time bar in simulate mode */}
       <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center", gap: 10, zIndex: 10 }}>
-        {placed && <YearBar month={month} setMonth={setMonth} playing={playing} setPlaying={setPlaying} status={status} />}
-        <BuildMenu activeId={settings?.presetId ?? null} onStartDrag={startFromMenu} />
+        {simulating ? (
+          <YearBar month={month} setMonth={setMonth} playing={playing} setPlaying={setPlaying} status={status} />
+        ) : (
+          <BuildMenu activeId={settings?.presetId ?? null} onStartDrag={startFromMenu} />
+        )}
       </div>
 
       {/* Scale bar and compass */}

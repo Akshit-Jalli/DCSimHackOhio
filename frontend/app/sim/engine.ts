@@ -40,7 +40,7 @@ const COEF = coefficientsJson as unknown as Record<string, CoefEntry>;
 const BASE = baselineJson as unknown as Baseline;
 
 type V = { value: number };
-type Baseline = {
+export type Baseline = {
   school_district: {
     capacity_av_usd: V; base_cost_enrolled_adm: V; enrolled_adm: V;
     capacity_pct: V; base_cost_per_pupil_usd: V; local_capacity_per_pupil_usd: V;
@@ -50,6 +50,7 @@ type Baseline = {
   water: { wtp_capacity_mgd: V };
   site_parcel: { current_annual_tax_usd: number; taxable_usd: number };
 };
+export const WILMINGTON_BASELINE: Baseline = BASE;
 
 function isNum(x: unknown): x is number {
   return typeof x === "number" && Number.isFinite(x);
@@ -63,7 +64,7 @@ export function nominalCoefs(): Coefs {
   return c;
 }
 
-function sampleCoefs(rng: () => number): Coefs {
+function sampleCoefs(rng: () => number, overrides: Partial<Coefs> = {}): Coefs {
   const c: Coefs = {};
   for (const [k, v] of Object.entries(COEF)) {
     if (!v || typeof v !== "object" || !isNum(v.value)) continue;
@@ -71,6 +72,13 @@ function sampleCoefs(rng: () => number): Coefs {
     const hi = isNum(v.high) ? v.high : v.value;
     c[k] = hi > lo ? lo + rng() * (hi - lo) : v.value;
   }
+  return applyOverrides(c, overrides); // an explicit override is a chosen value, not a sampled one
+}
+
+/** Copy `base` with every defined override on top. `undefined` means "no override", never "set to undefined". */
+function applyOverrides(base: Coefs, overrides: Partial<Coefs>): Coefs {
+  const c: Coefs = { ...base };
+  for (const [k, v] of Object.entries(overrides)) if (typeof v === "number" && Number.isFinite(v)) c[k] = v;
   return c;
 }
 
@@ -145,8 +153,8 @@ function billDelta(mw: number, c: Coefs, tariffHolds: boolean): number {
 }
 
 // Ohio ORC 3317.017. AV/pupil uses BASE COST ADM; funding uses ENROLLED ADM.
-function schoolFinance(campusMarketValue: number, c: Coefs, abatementPct: number) {
-  const sd = BASE.school_district;
+function schoolFinance(campusMarketValue: number, c: Coefs, abatementPct: number, base: Baseline = BASE) {
+  const sd = base.school_district;
   const capAv = sd.capacity_av_usd.value;
   const bcAdm = sd.base_cost_enrolled_adm.value;
   const adm = sd.enrolled_adm.value;
@@ -193,24 +201,24 @@ function upstream(mwh: number, c: Coefs) {
 const m = (value: number, unit: string): Metric => ({ value, unit });
 
 /** One deterministic run with a given coefficient set. Mirrors run_once. */
-export function runOnce(input: EngineInput, ctx: Ctx, c: Coefs, loopsOn = true): { rows: YearRow[]; meta: RunMeta } {
+export function runOnce(input: EngineInput, ctx: Ctx, c: Coefs, loopsOn = true, base: Baseline = BASE): { rows: YearRow[]; meta: RunMeta } {
   const cooling = pyCooling(input.facility.cooling);
   const tariffHolds = /tariff/i.test(input.policy.grid_cost_allocation ?? "");
   const municipal = input.facility.water_source !== "onsite_wells";
   const phases = input.facility.phases;
-  const site = BASE.site_parcel;
+  const site = base.site_parcel;
   const effRate = site.current_annual_tax_usd / site.taxable_usd;
-  const adm = BASE.school_district.enrolled_adm.value;
-  const baselineFunding = schoolFinance(0, c, 0).funding;
+  const adm = base.school_district.enrolled_adm.value;
+  const baselineFunding = schoolFinance(0, c, 0, base).funding;
 
   // persistent state — this is what makes it a simulation
   let backlash = 0;
   let moratoriumYear: number | null = null;
   let mwCappedAt: number | null = null;
-  let farms = BASE.agriculture.county_farms.value;
-  const sewerUsed = BASE.wastewater.mean_monthly_avg_mgd.value;
-  const sewerDesign = BASE.wastewater.wwtp_design_mgd.value;
-  const rent0 = BASE.agriculture.cash_rent_usd_per_acre.value;
+  let farms = base.agriculture.county_farms.value;
+  const sewerUsed = base.wastewater.mean_monthly_avg_mgd.value;
+  const sewerDesign = base.wastewater.wwtp_design_mgd.value;
+  const rent0 = base.agriculture.cash_rent_usd_per_acre.value;
   let prevRent = rent0;
 
   const rows: YearRow[] = [];
@@ -225,7 +233,7 @@ export function runOnce(input: EngineInput, ctx: Ctx, c: Coefs, loopsOn = true):
     let abate = 0;
     if (mw > 0 && y - phases[0].year < input.policy.abatement_years) abate = input.policy.property_abatement_pct;
 
-    const sf = schoolFinance(marketValue, c, abate);
+    const sf = schoolFinance(marketValue, c, abate, base);
     const bill = billDelta(mw, c, tariffHolds);
 
     // LOOP 1 — land speculation -> cash rent -> farm exit (change-driven)
@@ -276,7 +284,7 @@ export function runOnce(input: EngineInput, ctx: Ctx, c: Coefs, loopsOn = true):
 
     const waterDirectMgal = (mwh * wue * 1000) / L_PER_MGAL;
     const withdrawalMgd = waterDirectMgal / 365;
-    const pctCap = municipal ? (withdrawalMgd / BASE.water.wtp_capacity_mgd.value) * 100 : 0;
+    const pctCap = municipal ? (withdrawalMgd / base.water.wtp_capacity_mgd.value) * 100 : 0;
     const rateDelta = municipal ? pctCap * c.water_rate_passthrough_pct_per_pct_capacity : 0;
 
     const schoolDelta = sf.funding - baselineFunding;
@@ -324,8 +332,8 @@ export function runOnce(input: EngineInput, ctx: Ctx, c: Coefs, loopsOn = true):
 }
 
 /** Deterministic nominal run. This is what the parity test checks. */
-export function runSimulationNominal(input: EngineInput, ctx: Ctx): YearRow[] {
-  return runOnce(input, ctx, nominalCoefs()).rows;
+export function runSimulationNominal(input: EngineInput, ctx: Ctx, opts: SimOptions = {}): YearRow[] {
+  return runOnce(input, ctx, applyOverrides(nominalCoefs(), opts.coefOverrides ?? {}), true, opts.baseline ?? BASE).rows;
 }
 
 // numpy's default 'linear' percentile
@@ -370,17 +378,22 @@ function bandRows(nominal: YearRow[], draws: YearRow[][]): YearRow[] {
 
 export type SimOutput = { rows: YearRow[]; moratoriumRate: number; builtBy: number | null };
 
+/** Town profile and user overrides. Omit either to run on Wilmington with the published coefficients. */
+export type SimOptions = { baseline?: Baseline; coefOverrides?: Partial<Coefs> };
+
 /**
  * What Scene.tsx calls. One set of Monte Carlo draws gives both the banded
  * rows and the probability a moratorium fires. Common random numbers: the
  * PRNG is re-seeded identically every call, so two settings differ by
  * signal, not sampling noise.
  */
-export function simulate(input: EngineInput, ctx: Ctx): SimOutput {
+export function simulate(input: EngineInput, ctx: Ctx, opts: SimOptions = {}): SimOutput {
+  const base = opts.baseline ?? BASE;
+  const ov = opts.coefOverrides ?? {};
   const rng = mulberry32(SEED);
   const draws: { rows: YearRow[]; meta: RunMeta }[] = [];
-  for (let i = 0; i < N_DRAWS; i++) draws.push(runOnce(input, ctx, sampleCoefs(rng)));
-  const nominal = runOnce(input, ctx, nominalCoefs()).rows;
+  for (let i = 0; i < N_DRAWS; i++) draws.push(runOnce(input, ctx, sampleCoefs(rng, ov), true, base));
+  const nominal = runOnce(input, ctx, applyOverrides(nominalCoefs(), ov), true, base).rows;
   const rows = bandRows(nominal, draws.map((d) => d.rows));
   const moratoriumRate = draws.filter((d) => d.meta.moratorium_year !== null).length / N_DRAWS;
   const ph = input.facility.phases;
@@ -388,11 +401,11 @@ export function simulate(input: EngineInput, ctx: Ctx): SimOutput {
 }
 
 /** Same signature as fakeEngine.runSimulation; kept for the parity test and callers that only want rows. */
-export function runSimulation(input: EngineInput, ctx: Ctx): YearRow[] {
-  return simulate(input, ctx).rows;
+export function runSimulation(input: EngineInput, ctx: Ctx, opts: SimOptions = {}): YearRow[] {
+  return simulate(input, ctx, opts).rows;
 }
 
 /** Probability a moratorium fires, across the Monte Carlo draws. */
-export function moratoriumRate(input: EngineInput, ctx: Ctx): number {
-  return simulate(input, ctx).moratoriumRate;
+export function moratoriumRate(input: EngineInput, ctx: Ctx, opts: SimOptions = {}): number {
+  return simulate(input, ctx, opts).moratoriumRate;
 }

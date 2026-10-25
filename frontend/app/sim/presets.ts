@@ -57,7 +57,16 @@ export type Settings = {
   abatementPct: number;
   abatementYears: number; // how long the property-tax break lasts
   tariffHolds: boolean; // true: the data center pays its own grid upgrades (a large-load tariff)
+  // Advanced: SimInput fields that used to be hardcoded in Scene.tsx
+  pue: number; // power usage effectiveness
+  capexPerMw: number; // $ per MW of IT load
+  pilotAnnualUsd: number; // payment in lieu of taxes, $/yr
+  pilotSchoolSharePct: number; // share of the PILOT that reaches the school district
+  // Advanced: engine coefficient overrides (keys match data/coefficients.yaml). Empty = published value.
+  overrides: Partial<Record<AdvancedCoef, number>>;
 };
+
+export type AdvancedCoef = "load_factor" | "permanent_jobs_per_mw" | "water_l_per_kwh_evaporative" | "capex_construction_share" | "residual_bill_share_under_tariff";
 
 export function defaultSettings(p: Preset): Settings {
   return {
@@ -68,6 +77,11 @@ export function defaultSettings(p: Preset): Settings {
     abatementPct: 100,
     abatementYears: 10, // expires inside the 2026-2041 horizon so the tax cliff is visible
     tariffHolds: true,
+    pue: 1.25,
+    capexPerMw: 9.6e6,
+    pilotAnnualUsd: 1.2e6,
+    pilotSchoolSharePct: 40,
+    overrides: {},
   };
 }
 

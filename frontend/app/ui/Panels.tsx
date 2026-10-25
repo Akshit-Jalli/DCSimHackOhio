@@ -1,9 +1,10 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties, PointerEvent as ReactPointerEvent, ReactNode } from "react";
-import { PRESETS, YEAR_END, YEAR_START, type Preset, type Settings } from "../sim/presets";
+import { PRESETS, YEAR_END, YEAR_START, type AdvancedCoef, type Preset, type Settings } from "../sim/presets";
 import type { Cooling, WaterSource, YearResult } from "../sim/types";
 import { interpResult, interpSeries, monthLabel } from "../sim/interp";
+import coefficientsJson from "../../lib/data/coefficients.json";
 
 export const MONTHS_TOTAL = (YEAR_END - YEAR_START + 1) * 12;
 
@@ -240,12 +241,96 @@ export function SettingsPanel({
         <div style={hint}>The biggest lever on your electric bill. A tariff puts the cost on the data center.</div>
       </div>
 
+      <Advanced settings={settings} onChange={onChange} />
+
       <button
         onClick={onRemove}
         style={{ width: "100%", padding: "8px 0", borderRadius: 8, border: "1px solid #e53935", background: "white", color: "#e53935", fontWeight: 600, cursor: "pointer" }}
       >
         Remove
       </button>
+    </div>
+  );
+}
+
+// ---------------- Advanced (inside the settings panel) ----------------
+// Facility and deal fields that used to be hardcoded, plus a few engine
+// coefficients the user can override within their published range. Every
+// one of these changes the engine; nothing here is cosmetic.
+
+type CoefMeta = { value: number; low?: number; high?: number; unit?: string; confidence?: string; source?: string };
+const COEFS = coefficientsJson as unknown as Record<string, CoefMeta>;
+
+const ADV_COEFS: { key: AdvancedCoef; label: string; why: string; step: number; fmt: (n: number) => string }[] = [
+  { key: "load_factor", label: "Utilization", why: "Energy against design capacity. 1.0 means every rack runs flat out all year.", step: 0.01, fmt: (n) => `${Math.round(n * 100)}%` },
+  { key: "permanent_jobs_per_mw", label: "Permanent jobs per MW", why: "Independent audits put this near 0.4; developer claims run higher.", step: 0.01, fmt: (n) => n.toFixed(2) },
+  { key: "capex_construction_share", label: "Share of capex that is construction", why: "Only about a fifth of a data center's price is building. The rest is equipment.", step: 0.01, fmt: (n) => `${Math.round(n * 100)}%` },
+  { key: "water_l_per_kwh_evaporative", label: "Water per kWh, evaporative", why: "Only matters with evaporative cooling.", step: 0.01, fmt: (n) => `${n.toFixed(2)} L` },
+  { key: "residual_bill_share_under_tariff", label: "Bill effect that survives a tariff", why: "Our assumption with the widest range in the model. Top driver of the bill result.", step: 0.01, fmt: (n) => `${Math.round(n * 100)}%` },
+];
+
+function Advanced({ settings, onChange }: { settings: Settings; onChange: (s: Settings) => void }) {
+  const [open, setOpen] = useState(false);
+  const field: CSSProperties = { marginBottom: 12 };
+  const num: CSSProperties = { width: "100%", padding: "6px 8px", borderRadius: 6, border: "1px solid #cfd8dc", background: "white", fontSize: 13 };
+  const setOv = (k: AdvancedCoef, v: number | undefined) => {
+    const overrides = { ...settings.overrides };
+    if (v === undefined) delete overrides[k];
+    else overrides[k] = v;
+    onChange({ ...settings, overrides });
+  };
+  const nOverrides = Object.keys(settings.overrides).length;
+  return (
+    <div style={{ marginBottom: 14, borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 10 }}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        style={{ width: "100%", textAlign: "left", border: "none", background: "transparent", padding: 0, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+      >
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#546e7a", textTransform: "uppercase", letterSpacing: 0.5 }}>Advanced {nOverrides > 0 && <span style={{ color: "#1e88e5" }}>· {nOverrides} changed</span>}</span>
+        <span style={{ color: "#90a4ae" }}>{open ? "▾" : "▸"}</span>
+      </button>
+      {open && (
+        <div style={{ marginTop: 10 }}>
+          <div style={field}>
+            <div style={label}>PUE: <b>{settings.pue.toFixed(2)}</b></div>
+            <input type="range" min={1.05} max={1.8} step={0.01} value={settings.pue} onChange={(e) => onChange({ ...settings, pue: Number(e.target.value) })} style={{ width: "100%" }} />
+            <div style={hint}>Total power ÷ IT power. Hyperscale runs 1.1–1.3; older sites 1.5+.</div>
+          </div>
+          <div style={field}>
+            <div style={label}>Cost per MW</div>
+            <input type="number" min={2e6} max={20e6} step={1e5} value={settings.capexPerMw} onChange={(e) => onChange({ ...settings, capexPerMw: Number(e.target.value) })} style={num} />
+            <div style={hint}>Headline capex is MW × this. Drives construction jobs and the tax base.</div>
+          </div>
+          <div style={field}>
+            <div style={label}>PILOT payment, $/yr</div>
+            <input type="number" min={0} step={1e5} value={settings.pilotAnnualUsd} onChange={(e) => onChange({ ...settings, pilotAnnualUsd: Number(e.target.value) })} style={num} />
+            <div style={hint}>What the developer pays in lieu of the abated tax.</div>
+          </div>
+          <div style={field}>
+            <div style={label}>Share of PILOT to schools: <b>{settings.pilotSchoolSharePct}%</b></div>
+            <input type="range" min={0} max={100} step={5} value={settings.pilotSchoolSharePct} onChange={(e) => onChange({ ...settings, pilotSchoolSharePct: Number(e.target.value) })} style={{ width: "100%" }} />
+          </div>
+
+          <div style={{ ...label, marginTop: 14, marginBottom: 8 }}>Engine coefficients <span style={{ color: "#90a4ae" }}>— within their published range</span></div>
+          {ADV_COEFS.map(({ key, label: l, why, step, fmt: f }) => {
+            const m = COEFS[key];
+            const lo = m.low ?? m.value, hi = m.high ?? m.value;
+            const cur = settings.overrides[key] ?? m.value;
+            const changed = settings.overrides[key] !== undefined;
+            return (
+              <div key={key} style={field}>
+                <div style={{ ...label, display: "flex", justifyContent: "space-between" }}>
+                  <span>{l}: <b style={{ color: changed ? "#1e88e5" : undefined }}>{f(cur)}</b></span>
+                  {changed && <button type="button" onClick={() => setOv(key, undefined)} style={{ border: "none", background: "transparent", color: "#1e88e5", fontSize: 11, cursor: "pointer" }}>reset</button>}
+                </div>
+                <input type="range" min={lo} max={hi} step={step} value={cur} onChange={(e) => setOv(key, Number(e.target.value))} style={{ width: "100%" }} disabled={lo === hi} />
+                <div style={hint}>{why} Published {f(m.value)}, range {f(lo)}–{f(hi)}.</div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
