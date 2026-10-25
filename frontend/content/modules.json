@@ -1,3 +1,75 @@
 [
-  { "id": "module-1", "title": "What is a data center?" }
+  {
+    "id": "module-1",
+    "icon": "🏢",
+    "title": "What is a data center?",
+    "blurb": {
+      "K-2": "Find out what is inside a big computer building.",
+      "3-5": "Build one in Wilmington and see what it needs to run.",
+      "6-8": "Build one in Wilmington and measure what it uses.",
+      "9-12": "Build one in Wilmington and size up its power demand."
+    },
+    "teacher": {
+      "goal": {
+        "K-2": "Students say what a data center is (a building full of computers) and name two things it needs: electricity, and water to stay cool.",
+        "3-5": "Students explain what a data center does, why it needs a lot of electricity and cooling, and compare its electricity use to homes.",
+        "6-8": "Students describe how a data center turns electricity into computing and heat, estimate its electricity use in home-equivalents, and name trade-offs for a town.",
+        "9-12": "Students convert a data center's power (MW) into yearly energy (MWh) and home-equivalents, explain why cooling uses water, and weigh local costs and benefits."
+      },
+      "minutes": { "K-2": "10–15", "3-5": "15–20", "6-8": "20–25", "9-12": "20–30" },
+      "standards": {
+        "K-2": [
+          "K-ESS3-3: Communicate solutions that will reduce the impact of humans on the land, water, air, and/or other living things in the local environment.",
+          "K-2-ETS1-1: Ask questions, make observations, and gather information about a situation people want to change."
+        ],
+        "3-5": [
+          "4-PS3-2: Make observations to provide evidence that energy can be transferred from place to place by sound, light, heat, and electric currents.",
+          "5-ESS3-1: Obtain and combine information about ways individual communities use science ideas to protect the Earth's resources and environment."
+        ],
+        "6-8": [
+          "MS-ESS3-3: Apply scientific principles to design a method for monitoring and minimizing a human impact on the environment.",
+          "MS-ESS3-4: Construct an argument supported by evidence for how increases in human population and per-capita consumption of natural resources impact Earth's systems."
+        ],
+        "9-12": [
+          "HS-ESS3-4: Evaluate or refine a technological solution that reduces impacts of human activities on natural systems.",
+          "HS-ETS1-3: Evaluate a solution to a complex real-world problem based on prioritized criteria and trade-offs."
+        ]
+      }
+    }
+  },
+  {
+    "id": "module-2",
+    "icon": "⚡",
+    "title": "Power",
+    "blurb": "Where does all that electricity come from?",
+    "teacher": { "goal": "Planned: electricity supply, the grid and substations, and who pays for new power lines." }
+  },
+  {
+    "id": "module-3",
+    "icon": "💧",
+    "title": "Water",
+    "blurb": "Computers get hot. How do you cool them?",
+    "teacher": { "goal": "Planned: cooling, water use and a town's water supply." }
+  },
+  {
+    "id": "module-4",
+    "icon": "🏫",
+    "title": "Money and schools",
+    "blurb": "Taxes, tax breaks and what schools get.",
+    "teacher": { "goal": "Planned: property taxes, tax abatements and PILOT payments to schools." }
+  },
+  {
+    "id": "module-5",
+    "icon": "🌳",
+    "title": "Noise and land",
+    "blurb": "What changes for the neighbors?",
+    "teacher": { "goal": "Planned: noise, setbacks and farmland." }
+  },
+  {
+    "id": "module-6",
+    "icon": "🗳️",
+    "title": "You decide",
+    "blurb": "Should your town say yes?",
+    "teacher": { "goal": "Planned: weigh all the evidence and make a case at a pretend town meeting." }
+  }
 ]

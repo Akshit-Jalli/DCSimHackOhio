@@ -1,0 +1,6 @@
+[
+  { "id": "volt", "name": "Volt", "color": "#ffb300", "tagline": "A spark-powered robot who loves electricity" },
+  { "id": "drip", "name": "Drip", "color": "#29b6f6", "tagline": "A water drop who knows where water goes" },
+  { "id": "bit", "name": "Bit", "color": "#7e57c2", "tagline": "A tiny cube who thinks like a computer" },
+  { "id": "fern", "name": "Fern", "color": "#66bb6a", "tagline": "A leaf who looks after land and nature" }
+]
