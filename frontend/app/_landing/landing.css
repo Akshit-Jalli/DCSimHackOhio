@@ -1,0 +1,21 @@
+/* Landing and legal pages. Flat colors, square corners, hairline rules, no shadows. */
+.lp {
+  --paper: #f3f1ea;
+  --ink: #16150f;
+  --muted: #5e5b52;
+  --rule: #d6d1c4;
+  --accent: #b3471b; /* utility marking orange, used sparingly */
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--lp-sans), "Helvetica Neue", Arial, sans-serif;
+}
+.lp-serif { font-family: var(--lp-serif), Georgia, "Times New Roman", serif; font-weight: 400; }
+.lp-mono { font-family: var(--lp-mono), ui-monospace, Menlo, monospace; }
+.lp ::selection { background: var(--ink); color: var(--paper); }
+.lp a:focus-visible, .lp button:focus-visible, .lp input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.lp input[type="range"] { accent-color: var(--ink); }
+
+.lp-legal h2 { font-family: var(--lp-serif), Georgia, serif; font-weight: 400; font-size: 1.5rem; margin-bottom: 0.5rem; color: var(--ink); }
+.lp-legal p, .lp-legal li { color: var(--muted); }
+.lp-legal ul { list-style: disc; padding-left: 1.25rem; display: grid; gap: 0.35rem; }
+.lp-legal a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
