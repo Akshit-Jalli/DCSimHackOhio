@@ -1,0 +1,9 @@
+node_modules
+.next
+.vercel
+.git
+data/towns
+*.log
+.env
+.env.*
+!.env.example
