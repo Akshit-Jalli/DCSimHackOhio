@@ -52,6 +52,9 @@ export function ModuleMap({ profile, modules, guides, playable }: { profile: Pro
             {BAND_LABEL[band].short} · exploring with {guide.name}
           </div>
         </div>
+        <Link href="/learn/my-work" style={{ ...bigButton("plain"), minHeight: 50, fontSize: 17 }}>
+          📄 My work
+        </Link>
         <button onClick={() => setTeacher(true)} style={{ ...bigButton("plain"), minHeight: 50, fontSize: 17 }}>
           📋 For teachers
         </button>

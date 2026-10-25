@@ -29,7 +29,7 @@ export type LessonControl = {
   showImpacts?: boolean; // impacts panel; default true
   showSettings?: boolean; // settings panel; default true
   startYear?: number;
-  highlightMetric?: string | null; // impacts row key, see METRIC_KEYS in ui/Panels.tsx
+  highlightMetric?: string | null; // impacts row key, see app/metricKeys.ts
   highlightLandmark?: LandmarkKind | null; // pin gets bigger, shows its name, pulses
   suggest?: { x: number; z: number; tiles: number } | null; // glowing "Build here!" lot at the nearest buildable spot
   onEvent?: (e: SceneEvent) => void;

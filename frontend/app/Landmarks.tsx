@@ -234,11 +234,13 @@ export default function Landmarks({
   site,
   r,
   onLabels,
+  badges = true,
 }: {
   onLabels: (labels: Label[]) => void;
   // where the data center is and how loud it is (null = nothing placed)
   site: { pos: [number, number]; half: number; noiseRadius: number } | null;
   r: YearResult | null;
+  badges?: boolean; // number badges on pins ($/student, % of supply, loud zone); off in lessons
 }) {
   const [infra, setInfra] = useState<{
     towers: [number, number][];
@@ -308,6 +310,7 @@ export default function Landmarks({
     !!site && site.noiseRadius > site.half && Math.hypot(x - site.pos[0], z - site.pos[1]) < site.noiseRadius;
 
   function badgeFor(kind: Kind, x: number, z: number): Badge {
+    if (!badges) return null;
     if (!site || !r || r.active_mw === 0) return null;
     if (inLoudZone(x, z)) return { text: `🔊 Loud zone`, tone: "bad" };
     if (kind === "school") {
@@ -335,7 +338,7 @@ export default function Landmarks({
       badge: badgeFor(p.kind, p.xz[0], p.xz[1]),
     }));
     infra?.towers.forEach(([x, z], i) =>
-      out.push({ id: `t${i}`, x, y: 95, z, icon: ICON.tower, kind: "water_tower", name: "Water tower", badge: inLoudZone(x, z) ? { text: "🔊 Loud zone", tone: "bad" } : null, small: true })
+      out.push({ id: `t${i}`, x, y: 95, z, icon: ICON.tower, kind: "water_tower", name: "Water tower", badge: badges && inLoudZone(x, z) ? { text: "🔊 Loud zone", tone: "bad" } : null, small: true })
     );
     infra?.subs.forEach((s, i) =>
       out.push({
@@ -346,7 +349,7 @@ export default function Landmarks({
         icon: ICON.substation,
         kind: "substation",
         name: "Power substation",
-        badge: hookup && hookup.sub === s && site && r && r.active_mw > 0 ? { text: `New line: ${hookup.km.toFixed(1)} km`, tone: "warn" } : null,
+        badge: badges && hookup && hookup.sub === s && site && r && r.active_mw > 0 ? { text: `New line: ${hookup.km.toFixed(1)} km`, tone: "warn" } : null,
         small: true,
       })
     );

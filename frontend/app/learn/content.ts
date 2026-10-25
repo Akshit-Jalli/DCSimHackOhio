@@ -40,7 +40,7 @@ export type LookStep = Common & {
   text: Text;
   target: FlyTarget;
   landmark?: LandmarkKind; // pin to highlight (default: the target, if it's a pin kind)
-  highlight?: string; // impacts panel row, e.g. "power.homes" (METRIC_KEYS in app/ui/Panels.tsx)
+  highlight?: string; // impacts panel row, e.g. "power.homes" (app/metricKeys.ts)
   fact?: FactKey; // big number card at the top of the screen
   lockCamera?: boolean;
 };

@@ -284,7 +284,7 @@ function Row({
   index,
   color,
 }: {
-  k: string; // key a lesson uses to highlight this row (METRIC_KEYS)
+  k: string; // key a lesson uses to highlight this row (app/metricKeys.ts)
   hl?: string | null;
   label: string;
   get: Getter;
@@ -324,24 +324,6 @@ const G = {
   permanent: (r: YearResult) => r.jobs.permanent_fte.value,
 };
 
-// Row keys lessons can highlight (highlightMetric). Keep in sync with the rows below.
-export const METRIC_KEYS = [
-  "water.daily",
-  "water.share",
-  "water.rates",
-  "power.mwh",
-  "power.homes",
-  "power.bill",
-  "money.tax_forgiven",
-  "money.pilot",
-  "money.per_student",
-  "noise.nearest_home",
-  "noise.loud_zone",
-  "land.acres",
-  "jobs.construction",
-  "jobs.permanent",
-] as const;
-
 export function ImpactsPanel({
   results,
   year,
@@ -354,7 +336,7 @@ export function ImpactsPanel({
   year: number;
   homesInZone: number;
   otherTown: boolean; // fake engine only knows Wilmington's water/schools/taxes
-  highlight?: string | null; // a METRIC_KEYS row to point at (lessons)
+  highlight?: string | null; // a row key from app/metricKeys.ts to point at (lessons)
   note?: string; // replaces the "Demo numbers" line
 }) {
   const index = Math.max(0, results.findIndex((x) => x.year === year));

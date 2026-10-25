@@ -632,7 +632,7 @@ export default function Scene({ town, townMenu, lesson }: { town: TownInfo; town
         />
 
         {/* Schools, hospital, water towers, power grid, with floating labels */}
-        <Landmarks site={site} r={placed ? r : null} onLabels={setLabels} />
+        <Landmarks site={site} r={placed ? r : null} onLabels={setLabels} badges={!lesson} />
         <LabelProjector />
 
         {/* The data center */}

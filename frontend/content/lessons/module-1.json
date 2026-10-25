@@ -13,10 +13,10 @@
       "type": "talk",
       "mood": "happy",
       "text": {
-        "K-2": "Hi {name}! This is Wilmington, a real town in Ohio. Let's explore!",
-        "3-5": "Hi {name}! Welcome to Wilmington, Ohio. Every building, road and tree here comes from real map data.",
-        "6-8": "Hi {name}. This is a 3D model of Wilmington, Ohio, built from real map data.",
-        "9-12": "Hi {name}. This is a 3D model of Wilmington, Ohio, built from open map data. Footprints are real; heights are exaggerated 3x."
+        "K-2": "Hi {name}! This is **Wilmington**, a real town in Ohio. Let's explore!",
+        "3-5": "Hi {name}! Welcome to **Wilmington**, Ohio. Every building, road and tree here comes from real map data.",
+        "6-8": "Hi {name}. This is a 3D model of **Wilmington**, Ohio, built from real map data: every building, road and creek.",
+        "9-12": "Hi {name}. This is a 3D model of **Wilmington**, Ohio, built from open map data. Footprints are real; heights are exaggerated 3x."
       }
     },
     {
@@ -25,12 +25,14 @@
       "mood": "thinking",
       "text": {
         "K-2": "A **data center** is a big building. What do you think is inside?",
-        "6-8": "A **data center** is a large building. What do you think fills most of it?"
+        "3-5": "Towns are being asked to build **data centers**. What do you think is inside one?",
+        "6-8": "A **data center** is a large building. What do you think fills most of it?",
+        "9-12": "Companies want to build **data centers** in towns like this. What fills most of the building?"
       },
       "choices": [
-        { "id": "a", "text": { "K-2": "Lots of computers", "6-8": "Rows of computer servers" } },
-        { "id": "b", "text": { "K-2": "Lots of cows", "6-8": "Warehouse shelves of products" } },
-        { "id": "c", "text": { "K-2": "Lots of books", "6-8": "Offices full of workers" } }
+        { "id": "a", "text": { "K-2": "Lots of computers", "3-5": "Thousands of computers", "6-8": "Rows of computer servers", "9-12": "Racks of servers" } },
+        { "id": "b", "text": { "K-2": "Lots of cows", "3-5": "Shelves of things to sell", "6-8": "Warehouse shelves of products", "9-12": "Warehouse inventory" } },
+        { "id": "c", "text": { "K-2": "Lots of books", "3-5": "Offices for workers", "6-8": "Offices full of workers", "9-12": "Office space" } }
       ]
     },
     {
@@ -38,8 +40,28 @@
       "prediction": "inside",
       "answer": "a",
       "text": {
-        "right": { "K-2": "Yes! It's full of **computers**. They store videos, games and messages.", "6-8": "Right: thousands of **servers** that store and process data for apps and websites." },
-        "wrong": { "K-2": "Good guess! It's really full of **computers**. They store videos, games and messages.", "6-8": "Not quite: it's mostly **servers** that store and process data for apps and websites." }
+        "right": {
+          "K-2": "Yes! It's full of **computers**. They keep videos, games and photos.",
+          "3-5": "Yes! It's full of **computers** that store videos, games and messages for the internet.",
+          "6-8": "Right: thousands of **servers** that store and process data for apps and websites.",
+          "9-12": "Correct: rows of **servers** that store and process data for cloud services and AI."
+        },
+        "wrong": {
+          "K-2": "Good guess! It's really full of **computers**. They keep videos, games and photos.",
+          "3-5": "Good guess! It's really full of **computers** that store videos, games and messages.",
+          "6-8": "Not quite: it's mostly **servers** that store and process data for apps and websites.",
+          "9-12": "Not quite: it's mostly **servers** that store and process data for cloud services and AI."
+        }
+      }
+    },
+    {
+      "type": "talk",
+      "mood": "wow",
+      "text": {
+        "K-2": "When you watch a video, a computer in a **data center** sends it to you!",
+        "3-5": "When you watch a video or play online, a **data center** far away is doing the work.",
+        "6-8": "Streaming, searching and messaging all run on **data centers**, often hundreds of miles away.",
+        "9-12": "\"The cloud\" is physical: **data centers** full of servers, connected by fiber and powered by the grid."
       }
     },
     {
@@ -49,9 +71,26 @@
       "suggest": { "x": -1200, "z": 2800 },
       "text": {
         "K-2": "Let's build one! Drag the **Enterprise** card onto the glowing square.",
-        "6-8": "Build one: drag the **Enterprise** data center onto open land outside town."
+        "3-5": "Let's build one! Drag the **Enterprise** card onto the glowing square.",
+        "6-8": "Build one: drag the **Enterprise** data center onto open land outside town.",
+        "9-12": "Site one: drag the **Enterprise** data center onto open land outside town."
       },
-      "doneText": { "K-2": "You built a data center! 🎉", "6-8": "Placed! That's 80 acres, about 60 football fields." }
+      "doneText": {
+        "K-2": "You built a data center! 🎉",
+        "3-5": "You built it! It covers 80 acres, about as big as 60 football fields.",
+        "6-8": "Placed! The site is 80 acres, about 60 football fields.",
+        "9-12": "Placed. The site is 80 acres, about 60 football fields."
+      }
+    },
+    {
+      "type": "look",
+      "target": "datacenter",
+      "text": {
+        "K-2": "See the **cranes**? Builders are still making it.",
+        "3-5": "See the **cranes** and steel frames? It takes about two years to build.",
+        "6-8": "It's still **under construction**: steel frames and cranes. Big ones take years to build.",
+        "9-12": "It's **under construction**. Large sites are built in phases over several years."
+      }
     },
     {
       "type": "predict",
@@ -59,12 +98,14 @@
       "mood": "thinking",
       "text": {
         "K-2": "Computers need **electricity**. How many homes use as much as this data center?",
-        "6-8": "This data center draws **{mw} MW** of power. How many homes use that much electricity in a year?"
+        "3-5": "This data center uses **{mw} megawatts** of power. How many homes use that much electricity?",
+        "6-8": "It draws **{mw} MW**. If it runs at full power all year, how many homes' worth of electricity is that?",
+        "9-12": "At **{mw} MW**, running at full power all year, it uses {mwh} MWh. About how many homes use that much?"
       },
       "choices": [
-        { "id": "a", "text": "About 50 homes" },
-        { "id": "b", "text": "About 5,000 homes" },
-        { "id": "c", "text": "About 50,000 homes" }
+        { "id": "a", "text": { "K-2": "A few houses 🏠", "3-5": "About 50 homes", "6-8": "About 50 homes", "9-12": "About 50 homes" } },
+        { "id": "b", "text": { "K-2": "A street of houses 🏘️", "3-5": "About 5,000 homes", "6-8": "About 5,000 homes", "9-12": "About 5,000 homes" } },
+        { "id": "c", "text": { "K-2": "A whole city of houses 🏙️", "3-5": "About 50,000 homes", "6-8": "About 50,000 homes", "9-12": "About 50,000 homes" } }
       ]
     },
     {
@@ -72,10 +113,28 @@
       "action": "year",
       "atLeast": 2027,
       "text": {
-        "K-2": "It's still being built. Drag the **year slider** to 2027 to turn it on!",
-        "6-8": "It's under construction. Move the **year slider** to 2027, when it opens."
+        "K-2": "Let's finish building it! Drag the **year slider** to 2027.",
+        "3-5": "Let's finish building it. Drag the **year slider** to 2027, when it opens.",
+        "6-8": "Move the **year slider** to 2027, when it opens.",
+        "9-12": "Advance the **year slider** to 2027, when it comes online."
       },
-      "doneText": "It's running! ⚡"
+      "doneText": {
+        "K-2": "It's on! ⚡",
+        "3-5": "It's running! ⚡",
+        "6-8": "It's running. ⚡",
+        "9-12": "It's online. ⚡"
+      }
+    },
+    {
+      "type": "look",
+      "target": "datacenter",
+      "mood": "wow",
+      "text": {
+        "K-2": "Computers get **hot**! The circles on the roof are big **fans** that cool them.",
+        "3-5": "Computers make lots of **heat**. The circles on the roof are giant **fans** that keep them cool.",
+        "6-8": "Almost all the electricity turns into **heat**. Rooftop fans and cooling systems carry it away.",
+        "9-12": "Nearly every watt a server uses becomes **heat**, so cooling is a big part of a data center's design."
+      }
     },
     {
       "type": "check",
@@ -83,8 +142,18 @@
       "answer": "c",
       "fact": "homes",
       "text": {
-        "right": { "K-2": "Wow, you got it! It uses as much electricity as about **{homes} homes**!", "6-8": "Correct: running all year it uses as much electricity as about **{homes} homes**." },
-        "wrong": { "K-2": "Surprise! It uses as much electricity as about **{homes} homes**!", "6-8": "You picked {choice}. It's really about **{homes} homes**: {mw} MW all year adds up fast." }
+        "right": {
+          "K-2": "You got it! It uses as much electricity as about **{homes} homes**. That's a whole city!",
+          "3-5": "You got it! It uses as much electricity as about **{homes} homes**.",
+          "6-8": "Correct: if it runs at full power all year, that's as much electricity as about **{homes} homes**.",
+          "9-12": "Correct: at full power all year, {mwh} MWh is about **{homes} homes'** worth of electricity."
+        },
+        "wrong": {
+          "K-2": "Surprise! It uses as much electricity as about **{homes} homes**. That's a whole city!",
+          "3-5": "Surprise! It uses as much electricity as about **{homes} homes**.",
+          "6-8": "You picked {choice}. If it runs at full power all year, it's really about **{homes} homes**.",
+          "9-12": "You picked {choice}. At full power all year, {mwh} MWh is about **{homes} homes'** worth."
+        }
       }
     },
     {
@@ -92,14 +161,50 @@
       "target": "datacenter",
       "highlight": "power.homes",
       "bands": ["6-8", "9-12"],
-      "text": "The numbers panel shows our model's **rough estimate**. It's close to our math but not the same: real data centers don't always run at full power, and cooling uses extra electricity."
+      "text": {
+        "6-8": "The numbers panel shows our model's **rough estimate**. It's close to our math but not the same: real data centers don't always run at full power, and cooling uses extra electricity.",
+        "9-12": "The panel shows our model's **rough estimate**. It differs from our full-power math because real sites don't run at 100% and cooling adds load."
+      }
+    },
+    {
+      "type": "look",
+      "target": "water_tower",
+      "bands": ["K-2", "3-5"],
+      "text": {
+        "K-2": "Some data centers use **water** to cool their computers. Towns need water too!",
+        "3-5": "Some data centers cool their computers with **water**. Towns have to make sure there's enough for everyone."
+      }
+    },
+    {
+      "type": "look",
+      "target": "water_tower",
+      "highlight": "water.daily",
+      "bands": ["6-8", "9-12"],
+      "text": {
+        "6-8": "Some data centers cool with **water**, others mostly with air. The panel's water number is a **rough estimate**.",
+        "9-12": "Cooling can use air or **water**. Water-cooled sites can draw heavily on a town's supply. The panel's figure is a **rough estimate**."
+      }
+    },
+    {
+      "type": "talk",
+      "fly": "loudzone",
+      "mood": "thinking",
+      "text": {
+        "K-2": "A data center can bring **jobs**. But it can also be **loud**, and it uses lots of power.",
+        "3-5": "Data centers can bring **jobs** and **taxes** to a town. But they use lots of power, and the red circle shows where it might be **loud**.",
+        "6-8": "Towns weigh **benefits** (jobs, tax money) against **costs** (electricity, water, noise, farmland). The red circle is a rough estimate of the loud zone.",
+        "9-12": "Towns weigh **benefits** (tax base, jobs) against **costs** (grid load, water, noise, land use). The red circle is the model's rough loud zone."
+      }
     },
     {
       "type": "reflect",
       "id": "want",
       "kind": "vote",
       "bands": ["K-2", "3-5"],
-      "text": "Would you want a **data center** in your town?",
+      "text": {
+        "K-2": "Would you want a **data center** in your town?",
+        "3-5": "Now you know a little more. Would you want a **data center** in your town?"
+      },
       "choices": [
         { "id": "yes", "text": "Yes 👍" },
         { "id": "no", "text": "No 👎" },
@@ -111,14 +216,25 @@
       "id": "tradeoff",
       "kind": "short",
       "bands": ["6-8", "9-12"],
-      "text": "Name one **good thing** and one **worry** about building it here.",
-      "placeholder": "One good thing is… One worry is…"
+      "text": {
+        "6-8": "Name one **good thing** and one **worry** about building it here.",
+        "9-12": "Would you support this site? Give one **benefit** and one **cost**, using a number from this lesson."
+      },
+      "placeholder": {
+        "6-8": "One good thing is… One worry is…",
+        "9-12": "I would / wouldn't support it because…"
+      }
     },
     {
       "type": "talk",
       "mood": "wow",
       "fly": "home",
-      "text": "Great work, {name}! Next time we'll find out where all that electricity comes from."
+      "text": {
+        "K-2": "Great job, {name}! Next time, let's find out where all that **electricity** comes from.",
+        "3-5": "Great work, {name}! Next, we'll find out where all that **electricity** comes from.",
+        "6-8": "Nice work, {name}. Next module: where does {mw} MW of **electricity** come from?",
+        "9-12": "Good work, {name}. Next: how the grid supplies {mw} MW, and who pays for the **new power lines**."
+      }
     }
   ]
 }

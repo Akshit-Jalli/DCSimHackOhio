@@ -16,7 +16,7 @@ import { Guide } from "./Guide";
 import { saveAnswer, updateModule, useProfile } from "./progress";
 import { useSpeech } from "./speech";
 import { SpeechBubble } from "./SpeechBubble";
-import { bigButton, FONT, INK } from "./ui";
+import { bigButton, FONT, INK, Modal } from "./ui";
 
 const PIN_KINDS = ["school", "college", "hospital", "fire", "police", "cityhall", "water", "water_tower", "substation"];
 const LETTERS = "ABCDEFGH";
@@ -37,6 +37,7 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
   const [placed, setPlaced] = useState<{ preset: string; mw: number } | null>(null);
   const [year, setYear] = useState(lesson.startYear ?? 2031);
   const [bottomSpace, setBottomSpace] = useState(0); // height of the build menu / year bar
+  const [finished, setFinished] = useState(false);
 
   useEffect(() => {
     const b = new URLSearchParams(window.location.search).get("band") as Band | null;
@@ -135,7 +136,7 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
   function finish() {
     stop();
     updateModule(lesson.id, { step: index, done: true });
-    router.push("/learn");
+    setFinished(true);
   }
 
   // Keep the speech bubble above the build menu / year bar
@@ -189,6 +190,25 @@ export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guide
       <Link href="/learn" onClick={stop} style={{ ...bigButton("plain"), position: "fixed", top: 16, right: 16, zIndex: 20, minHeight: 52, fontSize: 18, border: "none", boxShadow: "0 4px 14px rgba(20,40,60,0.2)" }}>
         ← Map
       </Link>
+
+      {finished && (
+        <Modal onClose={() => router.push("/learn")} width={560}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: 10 }}>
+            <Guide id={guide.id} name={guide.name} mood="wow" size={120} />
+            <div style={{ fontSize: 54 }}>⭐</div>
+            <h2 style={{ fontSize: 32, margin: 0, lineHeight: 1.15, textWrap: "balance" }}>You finished “{textFor(lesson.title, band)}”!</h2>
+            <p style={{ fontSize: 20, margin: "4px 0 16px", color: "#4a5560" }}>Great work, {profile.name}.</p>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+              <Link href="/learn/my-work" style={bigButton("plain")}>
+                📄 My work
+              </Link>
+              <Link href="/learn" style={bigButton()}>
+                Back to map →
+              </Link>
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {mapReady && fact && <FactCard fact={fact} facts={facts} band={band} source={lesson.facts?.homeMWhPerYear?.source} />}
 
