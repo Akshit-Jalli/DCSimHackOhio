@@ -16,6 +16,7 @@ export function Header({ tone = "page" }: { tone?: "over" | "page" }) {
           <Link href="/#product" className="hidden hover:underline sm:inline">Product</Link>
           <Link href="/#method" className="hidden hover:underline sm:inline">Method</Link>
           <Link href="/#sources" className="hidden hover:underline sm:inline">Sources</Link>
+          <Link href="/learn" className="hover:underline">Learn</Link>
           <Link
             href="/simulate"
             className={`px-3.5 py-2 ${over ? "bg-white text-[var(--ink)] hover:bg-[var(--paper)]" : "bg-[var(--ink)] text-[var(--paper)] hover:bg-black"}`}
@@ -36,7 +37,7 @@ export function Footer() {
           <p className="lp-serif text-[22px] text-[var(--paper)]">dcsim</p>
           <p className="mt-3 max-w-xs text-sm leading-relaxed">A data center impact simulator for the towns being asked to host one. A student prototype built at HackOhio 2026.</p>
         </div>
-        <FooterCol title="Product" links={[{ href: "/simulate", label: "Simulator" }, { href: "/#method", label: "Method" }, { href: "/#sources", label: "Sources" }]} />
+        <FooterCol title="Product" links={[{ href: "/simulate", label: "Simulator" }, { href: "/learn", label: "Learn (K-12)" }, { href: "/#method", label: "Method" }, { href: "/#sources", label: "Sources" }]} />
         <FooterCol title="Project" links={[{ href: REPO, label: "GitHub" }, { href: `${REPO}/blob/main/LICENSE`, label: "MIT License" }]} />
         <FooterCol title="Legal" links={[{ href: "/terms", label: "Terms of use" }, { href: "/privacy", label: "Privacy policy" }]} />
       </div>

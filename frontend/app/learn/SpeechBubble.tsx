@@ -85,11 +85,26 @@ const PAD = 24; // same on every side, measured to the letters (cap tops, baseli
 
 // The guide's game-style dialogue box. The tail points left at the guide.
 // Not-yet-typed letters are invisible but still take up space, so lines don't jump while typing.
-export function SpeechBubble({ text, band, stepKey, footer }: { text: string; band: Band; stepKey: string; footer: ReactNode }) {
+export function SpeechBubble({
+  text,
+  band,
+  stepKey,
+  footer,
+  onTyping,
+}: {
+  text: string;
+  band: Band;
+  stepKey: string;
+  footer: ReactNode;
+  onTyping?: (typing: boolean) => void; // lets the guide's mouth move while the text types
+}) {
   const parts = parse(text);
   const total = parts.reduce((n, p) => n + p.text.length, 0);
   const { shown, done, skip } = useTypewriter(stepKey + text, total);
   const size = SIZE[band];
+  useEffect(() => {
+    onTyping?.(!done);
+  }, [done, onTyping]);
 
   // text-wrap: balance makes lines shorter but the box keeps the unbalanced width.
   // Shrink the text box to its longest balanced line (again on resize, text change and font load).

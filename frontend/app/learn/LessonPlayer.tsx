@@ -1,40 +1,71 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { loadWilmington } from "../defaultTown";
 import type { LessonControl, SceneEvent } from "../lessonControl";
 import { setTown, type TownInfo } from "../mapConfig";
 import Scene from "../Scene";
 import { LoadingScreen } from "../ui/LoadingScreen";
-import { BANDS, textFor, type Band, type Lesson, type Step } from "./content";
+import { BANDS, textFor, type Band, type GuideInfo, type Lesson, type Step } from "./content";
+import { Guide } from "./Guide";
+import { updateModule, useProfile } from "./progress";
 import { SpeechBubble } from "./SpeechBubble";
-
-const FONT = "var(--font-lesson), var(--font-geist-sans), system-ui, sans-serif";
+import { bigButton, FONT } from "./ui";
 
 // Runs a lesson's steps on top of the 3D scene (always Wilmington).
-// Step (a): talk and look steps. The grade band comes from ?band= until onboarding exists.
-export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
+// Grade band and guide come from the student's profile; ?band=K-2 overrides the band for testing.
+export default function LessonPlayer({ lesson, guides }: { lesson: Lesson; guides: GuideInfo[] }) {
+  const router = useRouter();
+  const profile = useProfile();
   const [town, setTownState] = useState<TownInfo | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [index, setIndex] = useState(0);
   const [visit, setVisit] = useState(1); // counts step changes, so returning to a step flies again
-  const [band, setBand] = useState<Band>("3-5");
+  const [bandOverride, setBandOverride] = useState<Band | null>(null);
+  const [talking, setTalking] = useState(false);
 
   useEffect(() => {
     const b = new URLSearchParams(window.location.search).get("band") as Band | null;
-    if (b && BANDS.includes(b)) setBand(b); // eslint-disable-line react-hooks/set-state-in-effect -- read once from the URL
+    if (b && BANDS.includes(b)) setBandOverride(b); // eslint-disable-line react-hooks/set-state-in-effect -- read once from the URL
     loadWilmington().then(({ town, fromPublic }) => {
       setTown(town, fromPublic);
       setTownState(town);
     });
   }, []);
 
+  // No student on this computer yet: onboarding first
+  useEffect(() => {
+    if (profile === null) router.replace("/learn");
+  }, [profile, router]);
+
+  // Pick up where the student left off (a finished lesson starts over)
+  const resumed = useRef(false);
+  useEffect(() => {
+    if (resumed.current || !profile) return;
+    resumed.current = true;
+    const saved = profile.modules[lesson.id];
+    if (saved && !saved.done && saved.step > 0) {
+      setIndex(Math.min(saved.step, lesson.steps.length - 1)); // eslint-disable-line react-hooks/set-state-in-effect -- once, when saved progress is first read
+      setVisit((v) => v + 1);
+    }
+  }, [profile, lesson]);
+
+  const band: Band = bandOverride ?? profile?.band ?? "3-5";
+  const guide = guides.find((g) => g.id === profile?.guide) ?? guides[0];
   const step: Step = lesson.steps[index];
   const last = index === lesson.steps.length - 1;
 
   function go(to: number) {
-    setIndex(Math.max(0, Math.min(lesson.steps.length - 1, to)));
+    const next = Math.max(0, Math.min(lesson.steps.length - 1, to));
+    setIndex(next);
     setVisit((v) => v + 1);
+    updateModule(lesson.id, { step: next });
+  }
+
+  function finish() {
+    updateModule(lesson.id, { step: index, done: true });
+    router.push("/learn");
   }
 
   // What this step asks the 3D scene to do
@@ -56,17 +87,14 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
     };
   }, [step, visit, lesson.startYear]);
 
-  if (!town) return <LoadingScreen visible title="Loading" />;
+  if (!town || !profile) return <LoadingScreen visible title="Loading" />;
 
   return (
     <>
       <Scene town={town} lesson={control} />
 
       {/* Back to the module map */}
-      <Link
-        href="/learn"
-        style={{ position: "fixed", top: 16, right: 16, zIndex: 20, background: "white", color: "#263238", borderRadius: 14, padding: "12px 18px", fontWeight: 700, fontSize: 16, textDecoration: "none", boxShadow: "0 4px 14px rgba(20,40,60,0.2)", fontFamily: FONT }}
-      >
+      <Link href="/learn" style={{ ...bigButton("plain"), position: "fixed", top: 16, right: 16, zIndex: 20, minHeight: 52, fontSize: 18, border: "none", boxShadow: "0 4px 14px rgba(20,40,60,0.2)" }}>
         ← Map
       </Link>
 
@@ -85,15 +113,16 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
             fontFamily: FONT,
           }}
         >
-          {/* Guide placeholder: the real guide characters come with onboarding */}
-          <div aria-hidden style={{ width: 84, height: 84, flexShrink: 0, borderRadius: "50%", background: "linear-gradient(135deg, #1e88e5, #43a047)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 40, boxShadow: "0 6px 18px rgba(0,0,0,0.25)" }}>
-            {step.mood === "wow" ? "😮" : step.mood === "thinking" ? "🤔" : "😊"}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <Guide id={guide.id} name={guide.name} mood={step.mood ?? "happy"} talking={talking} size={104} />
+            <span style={{ background: guide.color, color: "#fff", fontWeight: 800, fontSize: 16, borderRadius: 10, padding: "2px 10px", textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>{guide.name}</span>
           </div>
 
           <SpeechBubble
             text={textFor(step.text, band)}
             band={band}
             stepKey={String(visit)}
+            onTyping={setTalking}
             footer={
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: 15, fontWeight: 700, color: "#78909c", flex: 1, minWidth: 48 }}>
@@ -105,9 +134,9 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
                   </button>
                 )}
                 {last ? (
-                  <Link href="/learn" style={{ ...btn(true), textDecoration: "none" }}>
+                  <button onClick={finish} style={btn(true)}>
                     Finish ✓
-                  </Link>
+                  </button>
                 ) : (
                   <button onClick={() => go(index + 1)} style={btn(true)} autoFocus>
                     Next →
@@ -122,21 +151,7 @@ export default function LessonPlayer({ lesson }: { lesson: Lesson }) {
   );
 }
 
-// Big, easy-to-hit buttons
+// Big, easy-to-hit buttons (a bit smaller than the map's so the bubble stays compact)
 function btn(primary: boolean): React.CSSProperties {
-  return {
-    minHeight: 52,
-    minWidth: 110,
-    padding: "0 22px",
-    borderRadius: 16,
-    border: primary ? "none" : "2px solid #cfd8dc",
-    background: primary ? "#1e88e5" : "white",
-    color: primary ? "white" : "#263238",
-    fontSize: 19,
-    fontWeight: 800,
-    cursor: "pointer",
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-  };
+  return { ...bigButton(primary ? "primary" : "plain"), minHeight: 52, minWidth: 110, padding: "0 22px", fontSize: 19, borderRadius: 16, borderWidth: primary ? 0 : 2 };
 }

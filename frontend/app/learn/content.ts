@@ -42,6 +42,22 @@ export type LookStep = {
 // predict / do / check / reflect come in the next step
 export type Step = TalkStep | LookStep;
 
+// content/modules.json: the level select. A module is playable once content/lessons/<id>.json exists.
+export type ModuleInfo = {
+  id: string;
+  icon: string;
+  title: Text;
+  blurb: Text;
+  teacher?: {
+    goal: Text;
+    minutes?: Text;
+    standards?: Partial<Record<Band, string[]>>;
+  };
+};
+
+// content/guides.json: names and colors live in data; the drawings are in Guide.tsx (by id)
+export type GuideInfo = { id: string; name: string; color: string; tagline: string };
+
 export type Lesson = {
   id: string;
   title: Text;
