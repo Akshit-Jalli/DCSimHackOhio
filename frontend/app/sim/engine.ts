@@ -350,18 +350,8 @@ const METRIC_PATHS: MetricPath[] = [
   ["nuisance", "noise_dba_at_nearest_residence"], ["nuisance", "loud_radius_m"],
 ];
 
-/**
- * Monte Carlo over coefficient bands. Same signature as fakeEngine.runSimulation
- * so Scene.tsx swaps the import and nothing else. value = p50, low = p10, high = p90.
- * Common random numbers: the PRNG is re-seeded identically every call, so two
- * settings differ by signal, not sampling noise.
- */
-export function runSimulation(input: EngineInput, ctx: Ctx): YearRow[] {
-  const rng = mulberry32(SEED);
-  const draws: YearRow[][] = [];
-  for (let i = 0; i < N_DRAWS; i++) draws.push(runOnce(input, ctx, sampleCoefs(rng)).rows);
-
-  const nominal = runOnce(input, ctx, nominalCoefs()).rows;
+/** Collapse Monte Carlo draws onto the nominal rows: value = p50, low = p10, high = p90. */
+function bandRows(nominal: YearRow[], draws: YearRow[][]): YearRow[] {
   return nominal.map((row, yi) => {
     const out = structuredClone(row) as YearRow;
     for (const [group, key] of METRIC_PATHS) {
@@ -378,11 +368,31 @@ export function runSimulation(input: EngineInput, ctx: Ctx): YearRow[] {
   });
 }
 
-/** Probability a moratorium fires, across the Monte Carlo draws. Not part of
- *  YearResult; available to a future panel. */
-export function moratoriumRate(input: EngineInput, ctx: Ctx): number {
+export type SimOutput = { rows: YearRow[]; moratoriumRate: number; builtBy: number | null };
+
+/**
+ * What Scene.tsx calls. One set of Monte Carlo draws gives both the banded
+ * rows and the probability a moratorium fires. Common random numbers: the
+ * PRNG is re-seeded identically every call, so two settings differ by
+ * signal, not sampling noise.
+ */
+export function simulate(input: EngineInput, ctx: Ctx): SimOutput {
   const rng = mulberry32(SEED);
-  let n = 0;
-  for (let i = 0; i < N_DRAWS; i++) if (runOnce(input, ctx, sampleCoefs(rng)).meta.moratorium_year !== null) n++;
-  return n / N_DRAWS;
+  const draws: { rows: YearRow[]; meta: RunMeta }[] = [];
+  for (let i = 0; i < N_DRAWS; i++) draws.push(runOnce(input, ctx, sampleCoefs(rng)));
+  const nominal = runOnce(input, ctx, nominalCoefs()).rows;
+  const rows = bandRows(nominal, draws.map((d) => d.rows));
+  const moratoriumRate = draws.filter((d) => d.meta.moratorium_year !== null).length / N_DRAWS;
+  const ph = input.facility.phases;
+  return { rows, moratoriumRate, builtBy: ph.length ? ph[ph.length - 1].year : null };
+}
+
+/** Same signature as fakeEngine.runSimulation; kept for the parity test and callers that only want rows. */
+export function runSimulation(input: EngineInput, ctx: Ctx): YearRow[] {
+  return simulate(input, ctx).rows;
+}
+
+/** Probability a moratorium fires, across the Monte Carlo draws. */
+export function moratoriumRate(input: EngineInput, ctx: Ctx): number {
+  return simulate(input, ctx).moratoriumRate;
 }

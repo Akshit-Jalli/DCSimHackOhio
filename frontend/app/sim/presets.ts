@@ -66,7 +66,7 @@ export function defaultSettings(p: Preset): Settings {
     cooling: p.cooling,
     waterSource: "municipal",
     abatementPct: 100,
-    abatementYears: 15,
+    abatementYears: 10, // expires inside the 2026-2041 horizon so the tax cliff is visible
     tariffHolds: true,
   };
 }

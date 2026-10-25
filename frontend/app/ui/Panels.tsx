@@ -23,6 +23,7 @@ export const panel: CSSProperties = {
 };
 
 const label: CSSProperties = { fontSize: 12, color: "#607d8b", marginBottom: 4 };
+const hint: CSSProperties = { fontSize: 11, color: "#90a4ae", marginTop: 4, lineHeight: 1.35 };
 
 function fmt(n: number, digits = 0) {
   if (!isFinite(n)) return "0";
@@ -167,6 +168,7 @@ export function SettingsPanel({
           onChange={(e) => onChange({ ...settings, mw: Number(e.target.value) })}
           style={{ width: "100%" }}
         />
+        <div style={hint}>More megawatts: more jobs, more power, more of everything in the impacts.</div>
       </div>
 
       <div style={field}>
@@ -180,6 +182,7 @@ export function SettingsPanel({
           <option value="hybrid">Hybrid</option>
           <option value="evaporative">Evaporative (most water)</option>
         </select>
+        <div style={hint}>Evaporative uses water. Air cooling uses more electricity instead. There is no free option.</div>
       </div>
 
       <div style={field}>
@@ -192,6 +195,7 @@ export function SettingsPanel({
           <option value="municipal">City water system</option>
           <option value="onsite_wells">Its own wells</option>
         </select>
+        <div style={hint}>City water counts against the plant&apos;s capacity and can push up home water rates.</div>
       </div>
 
       <div style={field}>
@@ -205,6 +209,7 @@ export function SettingsPanel({
           onChange={(e) => onChange({ ...settings, abatementPct: Number(e.target.value) })}
           style={{ width: "100%" }}
         />
+        <div style={hint}>What the developer asks for. It is also what the schools give up.</div>
       </div>
 
       <div style={field}>
@@ -218,6 +223,7 @@ export function SettingsPanel({
           <option value={15}>15 years</option>
           <option value={30}>30 years</option>
         </select>
+        <div style={hint}>When it ends, the full tax lands. Watch the schools section that year.</div>
       </div>
 
       <div style={field}>
@@ -231,6 +237,7 @@ export function SettingsPanel({
           <option value="dc">The data center (large-load tariff)</option>
           <option value="everyone">Everyone&apos;s bills (no tariff)</option>
         </select>
+        <div style={hint}>The biggest lever on your electric bill. A tariff puts the cost on the data center.</div>
       </div>
 
       <button
@@ -298,6 +305,33 @@ function Sparkline({ series, t, color }: { series: number[]; t: number; color: s
 
 type Getter = (r: YearResult) => number;
 
+// How much to trust each number. Mirrors the onboarding's Solid / Estimated / Assumed.
+type Tier = "solid" | "estimated" | "assumed";
+const TIER: Record<Tier, { color: string; text: string }> = {
+  solid: { color: "#43a047", text: "Solid: physics, published data, or a deal term you set." },
+  estimated: { color: "#f9a825", text: "Estimated: from a national study or an independent audit, applied here." },
+  assumed: { color: "#e53935", text: "Assumed: our judgment. The range on this number is wide." },
+};
+function Dot({ tier }: { tier: Tier }) {
+  return (
+    <span
+      title={TIER[tier].text}
+      aria-label={tier}
+      style={{ width: 7, height: 7, borderRadius: 4, background: TIER[tier].color, flexShrink: 0, display: "inline-block" }}
+    />
+  );
+}
+
+function cumulative(series: number[]): number[] {
+  let s = 0;
+  return series.map((v) => (s += v));
+}
+
+// "Per year" shows the rate in the current year. "Total so far" shows the running
+// sum through the current month — the long-term picture, which the rate hides.
+export type ViewMode = "year" | "total";
+type Total = { get: Getter; format: (n: number) => string; label: string };
+
 function Row({
   label,
   get,
@@ -305,6 +339,9 @@ function Row({
   results,
   t,
   color,
+  tier,
+  total,
+  mode,
 }: {
   label: string;
   get: Getter;
@@ -312,15 +349,81 @@ function Row({
   results: YearResult[];
   t: number; // fractional index into results
   color: string;
+  tier: Tier;
+  total?: Total; // if set, this row has a meaningful running total
+  mode: ViewMode;
 }) {
-  const series = useMemo(() => results.map(get), [results, get]);
+  const yearSeries = useMemo(() => results.map(get), [results, get]);
+  const totalSeries = useMemo(() => (total ? cumulative(results.map(total.get)) : null), [results, total]);
+  const useTotal = mode === "total" && totalSeries !== null;
+  const series = useTotal && totalSeries ? totalSeries : yearSeries;
+  const fmtFn = useTotal && total ? total.format : format;
+  const text = useTotal && total ? total.label : label;
+  const now = mode === "total" && !total; // a stock, not a flow: same number in both modes
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 3 }}>
-      <span style={{ color: "#546e7a", flex: 1 }}>{label}</span>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, marginBottom: 3, opacity: now ? 0.75 : 1 }}>
+      <Dot tier={tier} />
+      <span style={{ color: "#546e7a", flex: 1 }}>
+        {text}
+        {now && <span style={{ fontSize: 10, color: "#90a4ae", marginLeft: 5 }}>now</span>}
+      </span>
       <Sparkline series={series} t={t} color={color} />
       <span style={{ fontWeight: 700, whiteSpace: "nowrap", minWidth: 74, textAlign: "right", fontVariantNumeric: "tabular-nums" }}>
-        <AnimatedNumber value={interpSeries(series, t)} format={format} />
+        <AnimatedNumber value={interpSeries(series, t)} format={fmtFn} />
       </span>
+    </div>
+  );
+}
+
+// Running-total definitions. Rates (per day, per month) are converted to per-year amounts before summing.
+const T: Record<string, Total> = {
+  water: { get: (r) => r.water.withdrawal_mgd.value * 365, format: (n) => `${fmt(n)} M gal`, label: "Water used so far" },
+  mwh: { get: (r) => r.energy.facility_mwh.value, format: (n) => `${fmt(n)} MWh`, label: "Power used so far" },
+  bill: { get: (r) => r.ratepayer.household_bill_delta_usd_month.value * 12, format: (n) => `+$${fmt(n)}`, label: "Paid per household so far" },
+  taxForgone: { get: (r) => r.fiscal.property_tax_forgone_usd.value, format: money, label: "Tax forgiven so far" },
+  pilot: { get: (r) => r.fiscal.pilot_received_usd.value, format: money, label: "PILOT received so far" },
+  perPupil: { get: (r) => r.fiscal.net_per_pupil_delta_usd.value, format: (n) => (n >= 0 ? "+" : "") + money(n), label: "Per student so far" },
+  construction: { get: (r) => r.jobs.construction_fte.value, format: (n) => `${fmt(Math.round(n))} job-yrs`, label: "Construction work so far" },
+};
+
+const B = ({ children }: { children: ReactNode }) => <b style={{ color: "#263238" }}>{children}</b>;
+
+function noiseWord(dba: number) {
+  if (dba < 45) return "a quiet neighborhood at night";
+  if (dba < 55) return "a quiet office";
+  if (dba < 65) return "normal conversation";
+  if (dba < 75) return "a busy road";
+  return "loud — like heavy traffic";
+}
+
+// One paragraph that says what the town gets and gives up. This is the answer the
+// numbers below support.
+function Verdict({ results, builtBy, moratoriumRate, settings }: { results: YearResult[]; builtBy: number | null; moratoriumRate: number; settings: Settings }) {
+  const last = results[results.length - 1];
+  const sum = (g: Getter) => results.reduce((s, r) => s + g(r), 0);
+  const perm = Math.round(last.jobs.permanent_fte.value);
+  const constr = Math.round(sum((r) => r.jobs.construction_fte.value));
+  const pilot = sum((r) => r.fiscal.pilot_received_usd.value);
+  const forgone = sum((r) => r.fiscal.property_tax_forgone_usd.value);
+  const perPupilNow = last.fiscal.net_per_pupil_delta_usd.value;
+  const billYr = last.ratepayer.household_bill_delta_usd_month.value * 12;
+  const billCum = sum((r) => r.ratepayer.household_bill_delta_usd_month.value * 12);
+  const acres = Math.round(last.land.acres_converted.value);
+  const noise = last.nuisance.noise_dba_at_nearest_residence.value;
+  return (
+    <div style={{ fontSize: 13, lineHeight: 1.5, color: "#455a64", background: "rgba(30,136,229,0.07)", border: "1px solid rgba(30,136,229,0.18)", borderRadius: 10, padding: "10px 12px", margin: "10px 0 12px" }}>
+      <div style={{ ...stepTag, color: "#1e88e5", marginBottom: 4 }}>By {YEAR_END}, built as set{builtBy ? ` and fully open by ${builtBy}` : ""}</div>
+      The town gets <B>{fmt(perm)} permanent jobs</B> and <B>{fmt(constr)} job-years of construction</B>.
+      Schools receive <B>{money(pilot)}</B> in payments while the tax break forgives <B>{money(forgone)}</B>; per student that nets to <B>{perPupilNow >= 0 ? "+" : ""}{money(perPupilNow)}/yr</B>
+      {settings.abatementYears <= YEAR_END - YEAR_START ? " once the break expires" : ""}.
+      Each household pays about <B>${fmt(billYr)}/yr</B> more for electricity, <B>{money(billCum)}</B> over the run.
+      <B>{fmt(acres)} acres</B> of land become data center. At the nearest home it sounds like <B>{noiseWord(noise)}</B> ({fmt(noise)} dBA).
+      {moratoriumRate >= 0.1 && (
+        <>
+          {" "}In <B>{Math.round(moratoriumRate * 100)}%</B> of runs, local opposition over bills stops it from expanding further.
+        </>
+      )}
+      <div style={{ fontSize: 11, color: "#90a4ae", marginTop: 6 }}>Every number is the change from having no data center. Dots show how solid each one is — hover them.</div>
     </div>
   );
 }
@@ -349,18 +452,34 @@ export function ImpactsPanel({
   status,
   homesInZone,
   otherTown,
+  moratoriumRate,
+  builtBy,
+  settings,
 }: {
   results: YearResult[];
   t: number; // fractional index into results (months / 12)
   timeLabel: string;
   status: string;
   homesInZone: number;
-  otherTown: boolean; // fake engine only knows Wilmington's water/schools/taxes
+  otherTown: boolean; // the engine's baseline (schools, water plant, taxes) is Wilmington's
+  moratoriumRate: number; // share of Monte Carlo runs in which opposition stops expansion
+  builtBy: number | null;
+  settings: Settings;
 }) {
   const r = useMemo(() => interpResult(results, t), [results, t]);
-  const rowProps = { results, t };
+  const [mode, setMode] = useState<ViewMode>("year");
+  const rowProps = { results, t, mode };
+  const tab = (m: ViewMode, text: string) => (
+    <button
+      type="button"
+      onClick={() => setMode(m)}
+      style={{ padding: "3px 9px", borderRadius: 6, border: "1px solid " + (mode === m ? "#1e88e5" : "#cfd8dc"), background: mode === m ? "#1e88e5" : "white", color: mode === m ? "white" : "#546e7a", fontSize: 11, fontWeight: 600, cursor: "pointer" }}
+    >
+      {text}
+    </button>
+  );
   return (
-    <div style={{ ...panel, top: 78, left: 16, width: 330, padding: 16, maxHeight: "calc(100vh - 240px)", overflowY: "auto" }}>
+    <div style={{ ...panel, top: 78, left: 16, width: 340, padding: 16, maxHeight: "calc(100vh - 240px)", overflowY: "auto" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
         <div>
           <div style={stepTag}>3 · Impacts</div>
@@ -368,40 +487,48 @@ export function ImpactsPanel({
         </div>
         <div style={{ fontSize: 12, color: "#607d8b", textAlign: "right", paddingBottom: 3 }}>{status}</div>
       </div>
+
+      <Verdict results={results} builtBy={builtBy} moratoriumRate={moratoriumRate} settings={settings} />
+
       {otherTown && (
-        <div style={{ fontSize: 11, color: "#ef6c00", background: "#fff3e0", borderRadius: 6, padding: "4px 8px", margin: "8px 0 0" }}>
+        <div style={{ fontSize: 11, color: "#ef6c00", background: "#fff3e0", borderRadius: 6, padding: "4px 8px", margin: "0 0 10px" }}>
           Baseline is Wilmington, Ohio&apos;s. School, water and tax figures use its numbers until this town has its own.
         </div>
       )}
 
-      {r.active_mw < 0.5 ? (
-        <div style={{ fontSize: 13, color: "#546e7a", margin: "8px 0 14px" }}>Nothing running yet — press play, or drag the timeline.</div>
-      ) : (
-        <div style={{ height: 8 }} />
-      )}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 10 }}>
+        {tab("year", "This year")}
+        {tab("total", "Total so far")}
+        <span style={{ fontSize: 11, color: "#90a4ae", marginLeft: 4 }}>{mode === "total" ? "running sums through " + timeLabel : "rates in " + timeLabel}</span>
+      </div>
+
+      {r.active_mw < 0.5 && mode === "year" ? (
+        <div style={{ fontSize: 13, color: "#546e7a", margin: "0 0 12px" }}>Nothing running yet — press play, or drag the timeline.</div>
+      ) : null}
 
       <Section title="Water" color="#1e88e5">
-        <Row {...rowProps} color="#1e88e5" label="Water used per day" get={G.water} format={(n) => `${fmt(n, 2)} M gal`} />
-        <Row {...rowProps} color="#1e88e5" label="Share of city system" get={G.waterPct} format={(n) => `${fmt(n, 1)}%`} />
-        <Row {...rowProps} color="#1e88e5" label="Home water rates" get={G.waterRate} format={(n) => `+${fmt(n, 1)}%`} />
+        <Row {...rowProps} color="#1e88e5" tier="estimated" total={T.water} label="Water used per day" get={G.water} format={(n) => `${fmt(n, 2)} M gal`} />
+        <Row {...rowProps} color="#1e88e5" tier="estimated" label="Share of city system" get={G.waterPct} format={(n) => `${fmt(n, 1)}%`} />
+        <Row {...rowProps} color="#1e88e5" tier="assumed" label="Home water rates" get={G.waterRate} format={(n) => `+${fmt(n, 1)}%`} />
       </Section>
 
       <Section title="Electricity" color="#f9a825">
-        <Row {...rowProps} color="#f9a825" label="Power used per year" get={G.mwh} format={(n) => `${fmt(n)} MWh`} />
-        <Row {...rowProps} color="#f9a825" label="Same as # of homes" get={G.homes} format={(n) => fmt(n)} />
-        <Row {...rowProps} color="#f9a825" label="Household bill" get={G.bill} format={(n) => `+$${fmt(n, 2)}/mo`} />
+        <Row {...rowProps} color="#f9a825" tier="solid" total={T.mwh} label="Power used per year" get={G.mwh} format={(n) => `${fmt(n)} MWh`} />
+        <Row {...rowProps} color="#f9a825" tier="solid" label="Same as # of homes" get={G.homes} format={(n) => fmt(n)} />
+        <Row {...rowProps} color="#f9a825" tier="estimated" total={T.bill} label="Household bill" get={G.bill} format={(n) => `+$${fmt(n, 2)}/mo`} />
       </Section>
 
       <Section title="Schools and taxes" color="#8e24aa">
-        <Row {...rowProps} color="#8e24aa" label="Property tax forgiven" get={G.taxForgone} format={money} />
-        <Row {...rowProps} color="#8e24aa" label="Payment to town (PILOT)" get={G.pilot} format={money} />
-        <Row {...rowProps} color="#8e24aa" label="Per student" get={G.perPupil} format={(n) => (n >= 0 ? "+" : "") + money(n)} />
+        <Row {...rowProps} color="#8e24aa" tier="solid" total={T.taxForgone} label="Property tax forgiven" get={G.taxForgone} format={money} />
+        <Row {...rowProps} color="#8e24aa" tier="solid" total={T.pilot} label="Payment to town (PILOT)" get={G.pilot} format={money} />
+        <Row {...rowProps} color="#8e24aa" tier="estimated" total={T.perPupil} label="Per student" get={G.perPupil} format={(n) => (n >= 0 ? "+" : "") + money(n)} />
       </Section>
 
       <Section title="Noise" color="#e53935">
-        <Row {...rowProps} color="#e53935" label="At the nearest home" get={G.noise} format={(n) => `${fmt(n)} dBA`} />
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13 }}>
-          <span style={{ color: "#546e7a" }}>Buildings in the loud zone</span>
+        <Row {...rowProps} color="#e53935" tier="assumed" label="At the nearest home" get={G.noise} format={(n) => `${fmt(n)} dBA`} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}>
+          <Dot tier="assumed" />
+          <span style={{ color: "#546e7a", flex: 1 }}>Buildings in the loud zone</span>
           <span style={{ fontWeight: 700 }}>
             <AnimatedNumber value={homesInZone} format={(n) => fmt(Math.round(n))} />
           </span>
@@ -409,9 +536,9 @@ export function ImpactsPanel({
       </Section>
 
       <Section title="Land and jobs" color="#43a047">
-        <Row {...rowProps} color="#43a047" label="Farmland converted" get={G.acres} format={(n) => `${fmt(n)} acres`} />
-        <Row {...rowProps} color="#43a047" label="Construction jobs" get={G.construction} format={(n) => fmt(Math.round(n))} />
-        <Row {...rowProps} color="#43a047" label="Permanent jobs" get={G.permanent} format={(n) => fmt(Math.round(n))} />
+        <Row {...rowProps} color="#43a047" tier="solid" label="Farmland converted" get={G.acres} format={(n) => `${fmt(n)} acres`} />
+        <Row {...rowProps} color="#43a047" tier="estimated" total={T.construction} label="Construction jobs" get={G.construction} format={(n) => fmt(Math.round(n))} />
+        <Row {...rowProps} color="#43a047" tier="estimated" label="Permanent jobs" get={G.permanent} format={(n) => fmt(Math.round(n))} />
       </Section>
     </div>
   );

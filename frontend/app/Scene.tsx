@@ -24,7 +24,7 @@ import {
   type Settings,
 } from "./sim/presets";
 import type { SimInput } from "./sim/types";
-import { runSimulation } from "./sim/engine";
+import { simulate } from "./sim/engine";
 import { interpResult, monthLabel, nightFromMonth } from "./sim/interp";
 import { BuildMenu, ImpactsPanel, MONTHS_TOTAL, SettingsPanel, YearBar, panel } from "./ui/Panels";
 import { LoadingScreen } from "./ui/LoadingScreen";
@@ -406,10 +406,11 @@ export default function Scene({ town, onPickTown }: { town: TownInfo; onPickTown
     };
   }, [settings, preset, pos, tiles, town.countyFips]);
 
-  const results = useMemo(
-    () => (input ? runSimulation(input, { nearestResidenceM }) : null),
+  const sim = useMemo(
+    () => (input ? simulate(input, { nearestResidenceM }) : null),
     [input, nearestResidenceM]
   );
+  const results = sim?.rows ?? null;
   // Annual row for things that must match the engine literally (noise zone, labels);
   // interpolated row for anything shown as a moving number.
   const r = results?.find((x) => x.year === year) ?? null;
@@ -685,7 +686,17 @@ export default function Scene({ town, onPickTown }: { town: TownInfo; onPickTown
 
       {/* Left: impacts */}
       {placed && rI && results && (
-        <ImpactsPanel results={results} t={t} timeLabel={timeLabel} status={status} homesInZone={homesInZone} otherTown={town.slug !== "wilmington-oh"} />
+        <ImpactsPanel
+          results={results}
+          t={t}
+          timeLabel={timeLabel}
+          status={status}
+          homesInZone={homesInZone}
+          otherTown={town.slug !== "wilmington-oh"}
+          moratoriumRate={sim?.moratoriumRate ?? 0}
+          builtBy={sim?.builtBy ?? null}
+          settings={settings}
+        />
       )}
 
       {/* Right: settings */}
